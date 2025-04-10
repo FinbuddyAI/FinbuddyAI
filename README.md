@@ -1,0 +1,2 @@
+# FinbuddyAI
+Frontend
