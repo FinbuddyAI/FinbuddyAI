@@ -75,7 +75,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 ```bash
 cd backend
 python -m venv env
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source env/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 2. Install dependencies:
