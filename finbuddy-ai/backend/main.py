@@ -5,8 +5,12 @@ from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from passlib.context import CryptContext
-import jwt
-from jwt.exceptions import InvalidTokenError
+from jose import jwt, JWTError
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
 
 app = FastAPI()
 security = HTTPBearer()
@@ -21,7 +25,7 @@ app.add_middleware(
 )
 
 # Database connection
-DATABASE_URL = "postgresql://neondb_owner:npg_QqGD4CdwuJ2x@ep-solitary-water-a8lihooj-pooler.eastus2.azure.neon.tech/neondb?sslmode=require"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Update password hashing configuration
 pwd_context = CryptContext(
@@ -31,7 +35,7 @@ pwd_context = CryptContext(
 )
 
 # JWT settings
-SECRET_KEY = "your-secret-key"
+SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = "HS256"
 
 def get_token_from_header(credentials: HTTPAuthorizationCredentials = Depends(security)):
@@ -171,7 +175,7 @@ async def get_profile(token: str = Depends(get_token_from_header)):
         finally:
             cur.close()
             conn.close()
-    except InvalidTokenError:
+    except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

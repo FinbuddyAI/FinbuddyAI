@@ -74,7 +74,7 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 1. Create and activate a virtual environment:
 ```bash
 cd backend
-python -m venv venv
+python -m venv env
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
