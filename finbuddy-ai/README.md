@@ -71,14 +71,14 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/t
 
 ### Backend Setup
 
-1. Create and activate a virtual environment:
+1. Create and activate a virtual environment (skip if you've setted up through setup.sh):
 ```bash
 cd backend
 python -m venv env
 source env/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-2. Install dependencies:
+2. Install dependencies (skip if you've setted up through setup.sh):
 ```bash
 pip install -r requirements.txt
 ```

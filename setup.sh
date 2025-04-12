@@ -16,5 +16,6 @@ npm install
 echo "Installing backend dependencies..."
 cd backend
 mamba install --file requirements.txt -y
+cd ..
 
 echo "✅ Environment setup complete!"
