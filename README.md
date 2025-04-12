@@ -1,9 +1,8 @@
 # FinbuddyAI
-Frontend
+Frontend + Backend
 
-## Create a conda environment using mamba
+## To begin: setup dependencies
 
 ```
-mamba create -n finbuddy-frontend
-mamba activate finbuddy-frontend
+source setup.sh
 ```
