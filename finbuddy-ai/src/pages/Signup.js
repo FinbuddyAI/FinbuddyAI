@@ -29,7 +29,8 @@ function Signup() {
     password: '',
     username: '',
     first_name: '',
-    last_name: ''
+    last_name: '',
+    phone_number: ''
   });
   const [error, setError] = useState('');
 
@@ -132,6 +133,15 @@ function Signup() {
               label="Last Name"
               name="last_name"
               value={formData.last_name}
+              onChange={handleChange}
+              margin="normal"
+              required
+            />
+            <TextField
+              fullWidth
+              label="Phone Number"
+              name="phone_number"
+              value={formData.phone_number}
               onChange={handleChange}
               margin="normal"
               required

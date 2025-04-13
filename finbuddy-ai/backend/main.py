@@ -48,6 +48,7 @@ class UserCreate(BaseModel):
     username: str
     first_name: str
     last_name: str
+    phone_number: str
 
 class UserLogin(BaseModel):
     email: str
@@ -90,11 +91,11 @@ async def register(user: UserCreate):
         
         # Insert user
         cur.execute("""
-            INSERT INTO users (email, username, first_name, last_name, hashed_password)
-            VALUES (%s, %s, %s, %s, %s)
-            RETURNING id, email, username, first_name, last_name
+            INSERT INTO users (email, username, first_name, last_name, phone_number, hashed_password)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            RETURNING id, email, username, first_name, last_name, phone_number
         """, (
-            user.email, user.username, user.first_name, user.last_name, hashed_password
+            user.email, user.username, user.first_name, user.last_name, user.phone_number, hashed_password
         ))
         
         new_user = cur.fetchone()
@@ -110,7 +111,8 @@ async def register(user: UserCreate):
                 "email": new_user["email"],
                 "username": new_user["username"],
                 "first_name": new_user["first_name"],
-                "last_name": new_user["last_name"]
+                "last_name": new_user["last_name"],
+                "phone_number": new_user["phone_number"]
             }
         }
         
