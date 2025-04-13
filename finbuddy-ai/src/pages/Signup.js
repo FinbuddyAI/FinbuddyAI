@@ -62,6 +62,20 @@ function Signup() {
         // Store token and user info
         localStorage.setItem('token', data.access_token);
         localStorage.setItem('user', JSON.stringify(data.user));
+
+        // Initialize bank data
+        const bankResponse = await fetch('http://localhost:8000/bank/init', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${data.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!bankResponse.ok) {
+          console.error('Failed to initialize bank data');
+        }
+
         navigate('/profile');
       } else {
         throw new Error('Invalid response from server');
