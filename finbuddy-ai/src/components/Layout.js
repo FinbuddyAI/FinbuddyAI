@@ -11,7 +11,7 @@ const Layout = ({ children }) => {
           flexGrow: 1,
           p: 3,
           width: { md: `calc(100% - 240px)` },
-          ml: { md: '240px' },
+          ml: { md: '0px' },
           background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
         }}
       >
