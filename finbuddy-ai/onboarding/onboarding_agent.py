@@ -247,8 +247,8 @@ class OnboardingAgent:
         # If conversation is complete, analyze and return the profile
         if is_complete:
             user_profile = self.profile_analyzer.analyze_conversation(self.conversation_history)
-            if self.expense_data is not None:
-                self._add_expense_data_to_profile(user_profile)
+        if self.expense_data is not None:
+            self._add_expense_data_to_profile(user_profile)
             return last_message, True, user_profile
             
         return last_message, False, None
