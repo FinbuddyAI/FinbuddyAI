@@ -18,21 +18,57 @@ def init_db():
     conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
     cur = conn.cursor()
     
-    # Create users table
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            email VARCHAR(255) UNIQUE NOT NULL,
-            username VARCHAR(50) UNIQUE NOT NULL,
-            first_name VARCHAR(50) NOT NULL,
-            last_name VARCHAR(50) NOT NULL,
-            phone_number VARCHAR(15) NOT NULL,
-            hashed_password VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    
-    conn.commit()
-    cur.close()
-    conn.close() 
+    try:
+        # Create users table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email VARCHAR(255) UNIQUE NOT NULL,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                first_name VARCHAR(50) NOT NULL,
+                last_name VARCHAR(50) NOT NULL,
+                phone_number VARCHAR(15) NOT NULL,
+                hashed_password VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create bank_accounts table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS bank_accounts (
+                id SERIAL PRIMARY KEY,
+                account_id VARCHAR(50) UNIQUE NOT NULL,
+                user_id INTEGER REFERENCES users(id),
+                name VARCHAR(50) NOT NULL,
+                mask VARCHAR(4) NOT NULL,
+                available_balance DECIMAL(10,2) NOT NULL,
+                current_balance DECIMAL(10,2) NOT NULL,
+                currency_code VARCHAR(3) NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create transactions table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS transactions (
+                id SERIAL PRIMARY KEY,
+                transaction_id VARCHAR(50) UNIQUE NOT NULL,
+                account_id VARCHAR(50) NOT NULL,
+                date DATE NOT NULL,
+                amount DECIMAL(10,2) NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                category VARCHAR(50) NOT NULL,
+                user_id INTEGER REFERENCES users(id),
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        conn.commit()
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Error initializing database: {str(e)}")
+        raise
+    finally:
+        cur.close()
+        conn.close() 

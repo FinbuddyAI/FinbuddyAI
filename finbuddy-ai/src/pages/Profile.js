@@ -12,26 +12,31 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip
+  Chip,
+  CircularProgress
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.9)',
-  backdropFilter: 'blur(10px)',
+  background: 'white',
   borderRadius: '20px',
   padding: theme.spacing(4),
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-  maxWidth: '800px',
-  margin: '0 auto',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+  },
 }));
 
 const TransactionPaper = styled(Paper)(({ theme }) => ({
   marginTop: theme.spacing(3),
   maxHeight: '400px',
   overflow: 'auto',
-  background: 'rgba(255, 255, 255, 0.8)',
+  background: 'white',
+  borderRadius: '15px',
+  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)',
 }));
 
 function Profile() {
@@ -105,11 +110,12 @@ function Profile() {
     return (
       <Box sx={{ 
         minHeight: '100vh',
+        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center'
       }}>
-        <Typography>Loading...</Typography>
+        <CircularProgress sx={{ color: '#2C3E50' }} />
       </Box>
     );
   }
@@ -117,7 +123,7 @@ function Profile() {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
+      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -125,7 +131,7 @@ function Profile() {
     }}>
       <Container maxWidth="md">
         <StyledPaper elevation={3}>
-          <Typography variant="h4" align="center" gutterBottom>
+          <Typography variant="h4" align="center" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
             Profile
           </Typography>
           {error && (
@@ -134,24 +140,24 @@ function Profile() {
             </Typography>
           )}
           <Box sx={{ mt: 3 }}>
-            <Typography variant="h6">Username: {user.username}</Typography>
-            <Typography variant="h6">Email: {user.email}</Typography>
-            <Typography variant="h6">Name: {user.first_name} {user.last_name}</Typography>
+            <Typography variant="h6" sx={{ color: '#2C3E50' }}>Username: {user.username}</Typography>
+            <Typography variant="h6" sx={{ color: '#2C3E50' }}>Email: {user.email}</Typography>
+            <Typography variant="h6" sx={{ color: '#2C3E50' }}>Name: {user.first_name} {user.last_name}</Typography>
           </Box>
 
           {bankData.accounts && bankData.accounts.length > 0 && (
             <Box sx={{ mt: 4 }}>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
                 Bank Account
               </Typography>
-              <Paper sx={{ p: 2, mb: 3 }}>
-                <Typography variant="h6">{bankData.accounts[0].name}</Typography>
-                <Typography>Account Number: ••••{bankData.accounts[0].mask}</Typography>
-                <Typography>Available Balance: ${bankData.accounts[0].balances.available.toFixed(2)}</Typography>
-                <Typography>Current Balance: ${bankData.accounts[0].balances.current.toFixed(2)}</Typography>
+              <Paper sx={{ p: 2, mb: 3, background: 'white', borderRadius: '15px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
+                <Typography variant="h6" sx={{ color: '#2C3E50' }}>{bankData.accounts[0].name}</Typography>
+                <Typography sx={{ color: '#2C3E50' }}>Account Number: ••••{bankData.accounts[0].mask}</Typography>
+                <Typography sx={{ color: '#2C3E50' }}>Available Balance: ${bankData.accounts[0].balances.available.toFixed(2)}</Typography>
+                <Typography sx={{ color: '#2C3E50' }}>Current Balance: ${bankData.accounts[0].balances.current.toFixed(2)}</Typography>
               </Paper>
 
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h5" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
                 Recent Transactions
               </Typography>
               <TransactionPaper>
@@ -159,17 +165,17 @@ function Profile() {
                   <Table>
                     <TableHead>
                       <TableRow>
-                        <TableCell>Date</TableCell>
-                        <TableCell>Description</TableCell>
-                        <TableCell>Category</TableCell>
-                        <TableCell align="right">Amount</TableCell>
+                        <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Date</TableCell>
+                        <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Description</TableCell>
+                        <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Category</TableCell>
+                        <TableCell align="right" sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Amount</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {bankData.transactions.map((transaction) => (
                         <TableRow key={transaction.transaction_id}>
-                          <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                          <TableCell>{transaction.name}</TableCell>
+                          <TableCell sx={{ color: '#2C3E50' }}>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                          <TableCell sx={{ color: '#2C3E50' }}>{transaction.name}</TableCell>
                           <TableCell>
                             <Chip 
                               label={transaction.category}
@@ -183,7 +189,7 @@ function Profile() {
                           <TableCell 
                             align="right"
                             sx={{ 
-                              color: transaction.amount >= 0 ? 'green' : 'red',
+                              color: transaction.amount >= 0 ? '#4CAF50' : '#f44336',
                               fontWeight: 'bold'
                             }}
                           >
@@ -203,11 +209,13 @@ function Profile() {
               variant="contained"
               onClick={() => navigate('/onboarding')}
               sx={{
-                background: 'linear-gradient(45deg, #4CAF50 30%, #81C784 90%)',
+                background: '#2C3E50',
                 borderRadius: '25px',
                 padding: '10px 30px',
+                boxShadow: '0 4px 15px rgba(44, 62, 80, 0.3)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #388E3C 30%, #66BB6A 90%)',
+                  background: '#1a252f',
+                  boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
                 }
               }}
             >
@@ -217,25 +225,29 @@ function Profile() {
               variant="contained"
               onClick={() => navigate('/chat')}
               sx={{
-                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                background: '#2C3E50',
                 borderRadius: '25px',
                 padding: '10px 30px',
+                boxShadow: '0 4px 15px rgba(44, 62, 80, 0.3)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
+                  background: '#1a252f',
+                  boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
                 }
               }}
             >
               Chat with AI
             </Button>
             <Button
-              variant="contained"
+              variant="outlined"
               onClick={handleLogout}
               sx={{
-                background: 'linear-gradient(45deg, #f44336 30%, #e57373 90%)',
+                color: '#2C3E50',
+                borderColor: '#2C3E50',
                 borderRadius: '25px',
                 padding: '10px 30px',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #d32f2f 30%, #ef5350 90%)',
+                  borderColor: '#1a252f',
+                  backgroundColor: 'rgba(44, 62, 80, 0.1)'
                 }
               }}
             >

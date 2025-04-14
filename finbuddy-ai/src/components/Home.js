@@ -12,19 +12,22 @@ import {
 import { styled } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom';
 
-const GradientText = styled(Typography)(({ theme }) => ({
-  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-  WebkitBackgroundClip: 'text',
-  WebkitTextFillColor: 'transparent',
+const StyledText = styled(Typography)(({ theme }) => ({
+  color: '#2C3E50',
   fontWeight: 'bold',
+  textShadow: '0 0 20px rgba(44, 62, 80, 0.2)',
 }));
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.9)',
-  backdropFilter: 'blur(10px)',
+  background: 'white',
   borderRadius: '20px',
   padding: theme.spacing(4),
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
+  boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+  transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-5px)',
+    boxShadow: '0 8px 30px rgba(0, 0, 0, 0.15)',
+  },
 }));
 
 function Home() {
@@ -34,23 +37,27 @@ function Home() {
   return (
     <Box sx={{ 
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
+      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
       display: 'flex',
       flexDirection: 'column'
     }}>
-      <AppBar position="static" sx={{ background: 'transparent', boxShadow: 'none' }}>
+      <AppBar position="static" sx={{ 
+        background: 'rgba(255, 255, 255, 0.9)',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(10px)',
+      }}>
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: 'white' }}>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, color: '#2C3E50' }}>
             FinBuddy AI
           </Typography>
           <Button 
             variant="outlined" 
             sx={{ 
-              color: 'white', 
-              borderColor: 'white',
+              color: '#2C3E50', 
+              borderColor: '#2C3E50',
               '&:hover': {
-                borderColor: '#2196F3',
-                backgroundColor: 'rgba(33, 150, 243, 0.1)'
+                borderColor: '#1a252f',
+                backgroundColor: 'rgba(44, 62, 80, 0.1)'
               }
             }}
             onClick={() => navigate('/login')}
@@ -63,17 +70,19 @@ function Home() {
       <Container maxWidth="md" sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <StyledPaper elevation={3}>
           <Box sx={{ textAlign: 'center' }}>
-            <GradientText variant="h2" gutterBottom>
+            <StyledText variant="h2" gutterBottom>
               FinBuddy AI
-            </GradientText>
+            </StyledText>
             <Typography 
               variant="h6" 
               sx={{ 
-                color: theme.palette.text.secondary,
+                color: '#34495E',
                 maxWidth: '600px',
                 margin: '0 auto',
                 lineHeight: 1.6,
-                mb: 4
+                mb: 4,
+                textShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+                fontWeight: 500
               }}
             >
               A comprehensive, step-by-step plan focused on expense management, built as a web app with chat, dashboard, and SMS integration.
@@ -82,11 +91,14 @@ function Home() {
               variant="contained" 
               size="large"
               sx={{
-                background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                background: '#2C3E50',
                 borderRadius: '25px',
                 padding: '10px 30px',
+                boxShadow: '0 4px 15px rgba(44, 62, 80, 0.3)',
+                textShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
                 '&:hover': {
-                  background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
+                  background: '#1a252f',
+                  boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
                 }
               }}
               onClick={() => navigate('/signup')}

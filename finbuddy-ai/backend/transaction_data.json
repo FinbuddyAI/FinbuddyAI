@@ -1,0 +1,860 @@
+{
+  "transactions": [
+    {
+      "transaction_id": "tx_035",
+      "account_id": "acct_123",
+      "date": "2025-02-23",
+      "amount": 21.57,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_036",
+      "account_id": "acct_123",
+      "date": "2025-02-24",
+      "amount": 12.4,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_037",
+      "account_id": "acct_123",
+      "date": "2025-02-24",
+      "amount": 30.49,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_038",
+      "account_id": "acct_123",
+      "date": "2025-02-25",
+      "amount": 55.92,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_039",
+      "account_id": "acct_123",
+      "date": "2025-02-25",
+      "amount": 23.87,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_040",
+      "account_id": "acct_123",
+      "date": "2025-02-26",
+      "amount": 19.43,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_041",
+      "account_id": "acct_123",
+      "date": "2025-02-27",
+      "amount": 54.68,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_042",
+      "account_id": "acct_123",
+      "date": "2025-02-27",
+      "amount": 30.97,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_043",
+      "account_id": "acct_123",
+      "date": "2025-02-27",
+      "amount": 30.5,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_044",
+      "account_id": "acct_123",
+      "date": "2025-02-27",
+      "amount": 295.77,
+      "name": "Clothing Store",
+      "category": "shopping"
+    },
+    {
+      "transaction_id": "tx_045",
+      "account_id": "acct_123",
+      "date": "2025-02-28",
+      "amount": 25.42,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_046",
+      "account_id": "acct_123",
+      "date": "2025-03-01",
+      "amount": 108.62,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_047",
+      "account_id": "acct_123",
+      "date": "2025-03-01",
+      "amount": 6.16,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_048",
+      "account_id": "acct_123",
+      "date": "2025-03-01",
+      "amount": 29.92,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_049",
+      "account_id": "acct_123",
+      "date": "2025-03-02",
+      "amount": 17.23,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_050",
+      "account_id": "acct_123",
+      "date": "2025-03-02",
+      "amount": 15.23,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_051",
+      "account_id": "acct_123",
+      "date": "2025-03-03",
+      "amount": 28.94,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_052",
+      "account_id": "acct_123",
+      "date": "2025-03-03",
+      "amount": 34.93,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_053",
+      "account_id": "acct_123",
+      "date": "2025-03-04",
+      "amount": 33.61,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_054",
+      "account_id": "acct_123",
+      "date": "2025-03-05",
+      "amount": 36.62,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_055",
+      "account_id": "acct_123",
+      "date": "2025-03-05",
+      "amount": 14.63,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_056",
+      "account_id": "acct_123",
+      "date": "2025-03-06",
+      "amount": 27.45,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_057",
+      "account_id": "acct_123",
+      "date": "2025-03-06",
+      "amount": 18.58,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_058",
+      "account_id": "acct_123",
+      "date": "2025-03-06",
+      "amount": 84.66,
+      "name": "Online Shopping",
+      "category": "shopping"
+    },
+    {
+      "transaction_id": "tx_059",
+      "account_id": "acct_123",
+      "date": "2025-03-07",
+      "amount": 5.85,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_060",
+      "account_id": "acct_123",
+      "date": "2025-03-07",
+      "amount": 34.16,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_061",
+      "account_id": "acct_123",
+      "date": "2025-03-07",
+      "amount": 42.25,
+      "name": "Train Ticket",
+      "category": "travel"
+    },
+    {
+      "transaction_id": "tx_062",
+      "account_id": "acct_123",
+      "date": "2025-03-08",
+      "amount": 87.1,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_063",
+      "account_id": "acct_123",
+      "date": "2025-03-08",
+      "amount": 17.27,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_064",
+      "account_id": "acct_123",
+      "date": "2025-03-08",
+      "amount": 36.91,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_065",
+      "account_id": "acct_123",
+      "date": "2025-03-09",
+      "amount": 35.43,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_066",
+      "account_id": "acct_123",
+      "date": "2025-03-10",
+      "amount": 24.36,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_067",
+      "account_id": "acct_123",
+      "date": "2025-03-11",
+      "amount": 36.12,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_068",
+      "account_id": "acct_123",
+      "date": "2025-03-11",
+      "amount": 206.62,
+      "name": "Flight",
+      "category": "travel"
+    },
+    {
+      "transaction_id": "tx_069",
+      "account_id": "acct_123",
+      "date": "2025-03-12",
+      "amount": 41.05,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_070",
+      "account_id": "acct_123",
+      "date": "2025-03-12",
+      "amount": 42.19,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_071",
+      "account_id": "acct_123",
+      "date": "2025-03-12",
+      "amount": 38.39,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_072",
+      "account_id": "acct_123",
+      "date": "2025-03-12",
+      "amount": 65.88,
+      "name": "Misc",
+      "category": "other"
+    },
+    {
+      "transaction_id": "tx_073",
+      "account_id": "acct_123",
+      "date": "2025-03-13",
+      "amount": 7.53,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_074",
+      "account_id": "acct_123",
+      "date": "2025-03-14",
+      "amount": 15.92,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_075",
+      "account_id": "acct_123",
+      "date": "2025-03-15",
+      "amount": 149.72,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_076",
+      "account_id": "acct_123",
+      "date": "2025-03-15",
+      "amount": 48.16,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_077",
+      "account_id": "acct_123",
+      "date": "2025-03-15",
+      "amount": 27.8,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_078",
+      "account_id": "acct_123",
+      "date": "2025-03-16",
+      "amount": 33.77,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_079",
+      "account_id": "acct_123",
+      "date": "2025-03-17",
+      "amount": 32.08,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_080",
+      "account_id": "acct_123",
+      "date": "2025-03-18",
+      "amount": 11.31,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_081",
+      "account_id": "acct_123",
+      "date": "2025-03-18",
+      "amount": 38.71,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_082",
+      "account_id": "acct_123",
+      "date": "2025-03-18",
+      "amount": 24.44,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_083",
+      "account_id": "acct_123",
+      "date": "2025-03-19",
+      "amount": 22.76,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_084",
+      "account_id": "acct_123",
+      "date": "2025-03-19",
+      "amount": 8.75,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_085",
+      "account_id": "acct_123",
+      "date": "2025-03-19",
+      "amount": 20.28,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_086",
+      "account_id": "acct_123",
+      "date": "2025-03-20",
+      "amount": 18.76,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_087",
+      "account_id": "acct_123",
+      "date": "2025-03-20",
+      "amount": 14.78,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_088",
+      "account_id": "acct_123",
+      "date": "2025-03-20",
+      "amount": 15.62,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_089",
+      "account_id": "acct_123",
+      "date": "2025-03-21",
+      "amount": 37.75,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_090",
+      "account_id": "acct_123",
+      "date": "2025-03-22",
+      "amount": 84.28,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_091",
+      "account_id": "acct_123",
+      "date": "2025-03-22",
+      "amount": 36.57,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_092",
+      "account_id": "acct_123",
+      "date": "2025-03-22",
+      "amount": 240.43,
+      "name": "Flight",
+      "category": "travel"
+    },
+    {
+      "transaction_id": "tx_093",
+      "account_id": "acct_123",
+      "date": "2025-03-23",
+      "amount": 33.25,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_094",
+      "account_id": "acct_123",
+      "date": "2025-03-24",
+      "amount": 7.05,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_095",
+      "account_id": "acct_123",
+      "date": "2025-03-25",
+      "amount": 30.61,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_096",
+      "account_id": "acct_123",
+      "date": "2025-03-25",
+      "amount": 39.31,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_097",
+      "account_id": "acct_123",
+      "date": "2025-03-25",
+      "amount": 13.48,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_098",
+      "account_id": "acct_123",
+      "date": "2025-03-26",
+      "amount": 18.14,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_099",
+      "account_id": "acct_123",
+      "date": "2025-03-26",
+      "amount": 4.87,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_100",
+      "account_id": "acct_123",
+      "date": "2025-03-27",
+      "amount": 39.42,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_101",
+      "account_id": "acct_123",
+      "date": "2025-03-27",
+      "amount": 50.52,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_102",
+      "account_id": "acct_123",
+      "date": "2025-03-27",
+      "amount": 6.28,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_103",
+      "account_id": "acct_123",
+      "date": "2025-03-28",
+      "amount": 34.64,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_104",
+      "account_id": "acct_123",
+      "date": "2025-03-29",
+      "amount": 84.99,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_105",
+      "account_id": "acct_123",
+      "date": "2025-03-29",
+      "amount": 9.16,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_106",
+      "account_id": "acct_123",
+      "date": "2025-03-29",
+      "amount": 21.0,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_107",
+      "account_id": "acct_123",
+      "date": "2025-03-29",
+      "amount": 36.22,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_108",
+      "account_id": "acct_123",
+      "date": "2025-03-30",
+      "amount": 25.53,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_109",
+      "account_id": "acct_123",
+      "date": "2025-03-30",
+      "amount": 38.34,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_110",
+      "account_id": "acct_123",
+      "date": "2025-03-31",
+      "amount": 56.74,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_111",
+      "account_id": "acct_123",
+      "date": "2025-03-31",
+      "amount": 7.53,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_112",
+      "account_id": "acct_123",
+      "date": "2025-03-31",
+      "amount": 21.32,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_113",
+      "account_id": "acct_123",
+      "date": "2025-04-01",
+      "amount": 11.43,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_114",
+      "account_id": "acct_123",
+      "date": "2025-04-02",
+      "amount": 51.69,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_115",
+      "account_id": "acct_123",
+      "date": "2025-04-02",
+      "amount": 5.75,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_116",
+      "account_id": "acct_123",
+      "date": "2025-04-02",
+      "amount": 7.92,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_117",
+      "account_id": "acct_123",
+      "date": "2025-04-03",
+      "amount": 36.78,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_118",
+      "account_id": "acct_123",
+      "date": "2025-04-04",
+      "amount": 45.71,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_119",
+      "account_id": "acct_123",
+      "date": "2025-04-04",
+      "amount": 4.24,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_120",
+      "account_id": "acct_123",
+      "date": "2025-04-05",
+      "amount": 142.42,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_121",
+      "account_id": "acct_123",
+      "date": "2025-04-05",
+      "amount": 53.48,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_122",
+      "account_id": "acct_123",
+      "date": "2025-04-05",
+      "amount": 35.28,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_123",
+      "account_id": "acct_123",
+      "date": "2025-04-05",
+      "amount": 31.98,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_124",
+      "account_id": "acct_123",
+      "date": "2025-04-06",
+      "amount": 24.29,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_125",
+      "account_id": "acct_123",
+      "date": "2025-04-07",
+      "amount": 35.26,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_126",
+      "account_id": "acct_123",
+      "date": "2025-04-07",
+      "amount": 9.33,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_127",
+      "account_id": "acct_123",
+      "date": "2025-04-07",
+      "amount": 8.01,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_128",
+      "account_id": "acct_123",
+      "date": "2025-04-08",
+      "amount": 38.76,
+      "name": "Fast Food",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_129",
+      "account_id": "acct_123",
+      "date": "2025-04-08",
+      "amount": 15.76,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_130",
+      "account_id": "acct_123",
+      "date": "2025-04-09",
+      "amount": 35.52,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_131",
+      "account_id": "acct_123",
+      "date": "2025-04-10",
+      "amount": 26.08,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_132",
+      "account_id": "acct_123",
+      "date": "2025-04-10",
+      "amount": 29.34,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_133",
+      "account_id": "acct_123",
+      "date": "2025-04-10",
+      "amount": 30.65,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_134",
+      "account_id": "acct_123",
+      "date": "2025-04-11",
+      "amount": 47.11,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_135",
+      "account_id": "acct_123",
+      "date": "2025-04-11",
+      "amount": 56.01,
+      "name": "Restaurant",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_136",
+      "account_id": "acct_123",
+      "date": "2025-04-11",
+      "amount": 33.89,
+      "name": "Uber",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_137",
+      "account_id": "acct_123",
+      "date": "2025-04-12",
+      "amount": 108.84,
+      "name": "Groceries",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_138",
+      "account_id": "acct_123",
+      "date": "2025-04-12",
+      "amount": 13.38,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_139",
+      "account_id": "acct_123",
+      "date": "2025-04-13",
+      "amount": 10.35,
+      "name": "Gas Station",
+      "category": "transportation"
+    },
+    {
+      "transaction_id": "tx_140",
+      "account_id": "acct_123",
+      "date": "2025-04-14",
+      "amount": 39.71,
+      "name": "Cafe",
+      "category": "food"
+    },
+    {
+      "transaction_id": "tx_141",
+      "account_id": "acct_123",
+      "date": "2025-04-14",
+      "amount": 3.1,
+      "name": "Bus Ticket",
+      "category": "transportation"
+    }
+  ]
+} 

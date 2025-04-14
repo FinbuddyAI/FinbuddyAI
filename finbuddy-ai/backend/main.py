@@ -101,6 +101,7 @@ def init_db():
                 amount DECIMAL(10,2) NOT NULL,
                 name VARCHAR(100) NOT NULL,
                 category VARCHAR(50) NOT NULL,
+                user_id INTEGER REFERENCES users(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -172,14 +173,14 @@ def generate_mock_bank_data(user_id):
                 
                 transaction_id = f"tx_{uuid.uuid4()}"
                 transactions.append((
-                    transaction_id, account_id, date, amount, merchant, category
+                    transaction_id, account_id, date, amount, merchant, category, user_id
                 ))
         
         # Insert transactions
         cur.executemany("""
             INSERT INTO transactions 
-            (transaction_id, account_id, date, amount, name, category)
-            VALUES (%s, %s, %s, %s, %s, %s)
+            (transaction_id, account_id, date, amount, name, category, user_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
         """, transactions)
         conn.commit()
     except Exception as e:
