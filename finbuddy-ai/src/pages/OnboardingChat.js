@@ -7,7 +7,9 @@ import {
   Paper,
   Button,
   TextField,
-  Stack
+  Stack,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
@@ -31,18 +33,14 @@ const ChatMessage = styled(Box)(({ theme, isUser }) => ({
   color: isUser ? 'white' : 'black',
 }));
 
-const questions = [
-  "Question 1: What are your main financial goals for the next year?",
-  "Question 2: How do you currently manage your monthly expenses?",
-  "Question 3: What financial challenges are you facing right now?"
-];
-
 function OnboardingChat() {
   const navigate = useNavigate();
-  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -51,35 +49,78 @@ function OnboardingChat() {
       return;
     }
 
-    // Add initial bot message
-    if (messages.length === 0 && currentQuestion < questions.length) {
-      setMessages([{ text: questions[currentQuestion], isUser: false }]);
-    }
-  }, [navigate, currentQuestion, messages.length]);
+    // Start the onboarding process
+    startOnboarding();
+  }, [navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim()) return;
-
+  const startOnboarding = async () => {
     try {
-      // Add user message
-      setMessages(prev => [...prev, { text: inputValue, isUser: true }]);
-      setInputValue('');
+      setIsLoading(true);
+      const response = await fetch('http://localhost:8000/onboarding/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
 
-      // Move to next question
-      if (currentQuestion < questions.length - 1) {
-        setCurrentQuestion(prev => prev + 1);
-        setMessages(prev => [...prev, { text: questions[currentQuestion + 1], isUser: false }]);
+      if (!response.ok) {
+        throw new Error('Failed to start onboarding');
       }
+
+      const data = await response.json();
+      setMessages([{ text: data.message, isUser: false }]);
     } catch (err) {
-      setError('Failed to send message. Please try again.');
+      setError('Failed to start onboarding. Please try again.');
+      console.error('Error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSkip = () => {
-    if (currentQuestion < questions.length - 1) {
-      setCurrentQuestion(prev => prev + 1);
-      setMessages(prev => [...prev, { text: questions[currentQuestion + 1], isUser: false }]);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!inputValue.trim() || isLoading) return;
+
+    try {
+      setIsLoading(true);
+      const userMessage = inputValue.trim();
+      setInputValue('');
+      
+      // Add user message
+      setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
+
+      // Make API call to send message
+      const response = await fetch('http://localhost:8000/onboarding/send-message', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ content: userMessage })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
+
+      const data = await response.json();
+      
+      // Add advisor's response
+      setMessages(prev => [...prev, { text: data.message, isUser: false }]);
+
+      // Check if onboarding is complete
+      if (data.is_complete) {
+        setIsOnboardingComplete(true);
+        setUserProfile(data.profile);
+        // You can handle the completed profile here (e.g., save to backend, navigate to dashboard)
+        console.log('Onboarding complete! Profile:', data.profile);
+      }
+    } catch (err) {
+      setError('Failed to send message. Please try again.');
+      console.error('Error:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,9 +139,14 @@ function OnboardingChat() {
             Financial Onboarding
           </Typography>
           {error && (
-            <Typography color="error" align="center" gutterBottom>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
-            </Typography>
+            </Alert>
+          )}
+          {isOnboardingComplete && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Onboarding complete! Your profile has been created.
+            </Alert>
           )}
           
           <Box sx={{ 
@@ -116,9 +162,17 @@ function OnboardingChat() {
                 <Typography>{message.text}</Typography>
               </ChatMessage>
             ))}
+            {isLoading && (
+              <ChatMessage isUser={false}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <CircularProgress size={20} />
+                  <Typography>Thinking...</Typography>
+                </Box>
+              </ChatMessage>
+            )}
           </Box>
 
-          {currentQuestion < questions.length ? (
+          {!isOnboardingComplete && (
             <form onSubmit={handleSubmit}>
               <Stack spacing={2}>
                 <TextField
@@ -126,64 +180,29 @@ function OnboardingChat() {
                   variant="outlined"
                   value={inputValue}
                   onChange={(e) => setInputValue(e.target.value)}
-                  placeholder="Type your response..."
+                  placeholder="Type your message..."
                   multiline
                   rows={2}
+                  disabled={isLoading}
                 />
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    fullWidth
-                    sx={{
-                      background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                      borderRadius: '25px',
-                      padding: '10px 30px',
-                      '&:hover': {
-                        background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
-                      }
-                    }}
-                  >
-                    Send
-                  </Button>
-                  <Button
-                    variant="contained"
-                    onClick={handleSkip}
-                    fullWidth
-                    sx={{
-                      background: 'linear-gradient(45deg, #FF9800 30%, #FFB74D 90%)',
-                      borderRadius: '25px',
-                      padding: '10px 30px',
-                      '&:hover': {
-                        background: 'linear-gradient(45deg, #F57C00 30%, #FFA726 90%)',
-                      }
-                    }}
-                  >
-                    Skip
-                  </Button>
-                </Box>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  fullWidth
+                  disabled={isLoading || !inputValue.trim()}
+                  sx={{
+                    background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+                    borderRadius: '25px',
+                    padding: '10px 30px',
+                    '&:hover': {
+                      background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
+                    }
+                  }}
+                >
+                  Send
+                </Button>
               </Stack>
             </form>
-          ) : (
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="h6" gutterBottom>
-                Thank you for your responses!
-              </Typography>
-              <Button
-                variant="contained"
-                onClick={() => navigate('/profile')}
-                sx={{
-                  background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                  borderRadius: '25px',
-                  padding: '10px 30px',
-                  '&:hover': {
-                    background: 'linear-gradient(45deg, #1976D2 30%, #1E88E5 90%)',
-                  }
-                }}
-              >
-                Back to Profile
-              </Button>
-            </Box>
           )}
         </StyledPaper>
       </Container>

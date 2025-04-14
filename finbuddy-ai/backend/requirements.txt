@@ -1,8 +1,36 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-psycopg2-binary==2.9.9
-python-jose[cryptography]==3.3.0
-passlib==1.7.4
-bcrypt==4.0.1
-python-dotenv==1.0.0
-pydantic==2.5.2
+
+# Web Framework
+fastapi>=0.109.2
+uvicorn>=0.27.1
+python-multipart>=0.0.6
+
+# Database
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.0
+alembic>=1.10.0
+
+# Authentication and Security
+python-jose[cryptography]>=3.3.0
+passlib>=1.7.4
+bcrypt>=4.0.1
+
+# Data Validation & Processing
+pydantic>=2.6.1
+email-validator>=2.0.0
+python-dotenv>=1.0.1
+
+# Date/Time Handling
+python-dateutil>=2.8.2
+
+# AI and Data Processing
+pyautogen>=0.2.14
+openai>=1.0.0
+pandas>=2.2.0
+numpy>=1.24.0
+
+# Data Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Utility Libraries
+requests>=2.28.0 

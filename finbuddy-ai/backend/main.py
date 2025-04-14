@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.routing import APIRouter
 from pydantic import BaseModel
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -10,12 +11,29 @@ from dotenv import load_dotenv
 import os
 from datetime import datetime, timedelta
 import uuid
+import sys
+from pathlib import Path
+
+# Add the onboarding directory to the Python path
+onboarding_path = str(Path(__file__).parent.parent / "onboarding")
+if onboarding_path not in sys.path:
+    sys.path.append(onboarding_path)
+
+from onboarding_agent import OnboardingAgent
 
 # Load environment variables
 load_dotenv()
 
 app = FastAPI()
 security = HTTPBearer()
+
+# Create onboarding router
+onboarding_router = APIRouter(prefix="/onboarding", tags=["onboarding"])
+
+# Initialize the onboarding agent
+config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
+onboarding_agent = OnboardingAgent(config_path=config_path)
+onboarding_agent.create_agents()
 
 # Add CORS middleware
 app.add_middleware(
@@ -55,6 +73,13 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+class ChatMessage(BaseModel):
+    message: str
+
+# Onboarding models
+class OnboardingMessage(BaseModel):
+    content: str
 
 # Initialize database
 def init_db():
@@ -447,6 +472,78 @@ async def get_bank_data(token: str = Depends(get_token_from_header)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/chat")
+async def chat(message: ChatMessage, token: str = Depends(get_token_from_header)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # TODO: Replace with actual AI model integration
+        # For now, return a simple response
+        return {
+            "response": f"I received your message: '{message.message}'. This is a placeholder response until we integrate the AI model."
+        }
+        
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/")
 async def root():
-    return {"message": "API is running!"} 
+    return {"message": "API is running!"}
+
+# Onboarding routes
+@onboarding_router.post("/start")
+async def start_onboarding(token: str = Depends(get_token_from_header)):
+    """
+    Start a new onboarding session and return the initial message from the financial advisor.
+    """
+    try:
+        # Start the conversation and get the initial message
+        initial_message = onboarding_agent.start_conversation()
+        return {"message": initial_message}
+    except Exception as e:
+        print(f"Error in start_onboarding: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@onboarding_router.post("/send-message")
+async def send_message(message: OnboardingMessage, token: str = Depends(get_token_from_header)):
+    """
+    Send a message to the financial advisor and get the response.
+    """
+    try:
+        # Send the message and get the response
+        response_message, is_complete, profile = onboarding_agent.send_message(message.content)
+        
+        if is_complete:
+            return {
+                "message": response_message,
+                "is_complete": True,
+                "profile": profile
+            }
+            
+        return {
+            "message": response_message,
+            "is_complete": False
+        }
+    except Exception as e:
+        print(f"Error in send_message: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@onboarding_router.get("/goals")
+async def get_onboarding_goals(token: str = Depends(get_token_from_header)):
+    """
+    Get the list of onboarding goals that need to be completed.
+    """
+    try:
+        goals = onboarding_agent.get_onboarding_goals()
+        return {"goals": goals}
+    except Exception as e:
+        print(f"Error in get_onboarding_goals: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Include the onboarding router
+app.include_router(onboarding_router) 

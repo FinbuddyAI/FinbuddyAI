@@ -4,7 +4,8 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
 import Home from './pages/Home';
-import Chat from './pages/Chat';
+import AIChat from './pages/AIChat';
+import OnboardingChat from './pages/OnboardingChat';
 import Layout from './components/Layout';
 
 function App() {
@@ -52,7 +53,15 @@ function App() {
           path="/chat"
           element={
             <PrivateRoute>
-              <Chat />
+              <AIChat />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/onboarding-chat"
+          element={
+            <PrivateRoute>
+              <OnboardingChat />
             </PrivateRoute>
           }
         />

@@ -1,196 +1,166 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  Container, 
-  Box, 
-  Typography, 
-  Paper,
-  Button,
-  TextField,
-  Stack,
-  IconButton,
-  CircularProgress
-} from '@mui/material';
+import React, { useState, useRef, useEffect } from 'react';
+import { Box, Container, TextField, Button, Paper, Typography, Avatar } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SendIcon from '@mui/icons-material/Send';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import PersonIcon from '@mui/icons-material/Person';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
-  background: 'rgba(255, 255, 255, 0.9)',
-  backdropFilter: 'blur(10px)',
-  borderRadius: '20px',
-  padding: theme.spacing(4),
-  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
-  maxWidth: '800px',
-  margin: '0 auto',
-  height: '80vh',
+  padding: theme.spacing(3),
+  marginTop: theme.spacing(3),
+  borderRadius: '12px',
+  backgroundColor: '#ffffff',
+  height: 'calc(100vh - 100px)',
   display: 'flex',
   flexDirection: 'column',
 }));
 
-const ChatMessage = styled(Box)(({ theme, isUser }) => ({
-  padding: theme.spacing(2),
+const MessageContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
   marginBottom: theme.spacing(2),
-  borderRadius: '15px',
-  maxWidth: '80%',
-  alignSelf: isUser ? 'flex-end' : 'flex-start',
-  backgroundColor: isUser ? '#2196F3' : '#E3F2FD',
-  color: isUser ? 'white' : 'black',
-  whiteSpace: 'pre-wrap',
+  alignItems: 'flex-start',
+}));
+
+const MessageBubble = styled(Box)(({ theme, isUser }) => ({
+  backgroundColor: isUser ? theme.palette.primary.main : '#f5f5f5',
+  color: isUser ? '#fff' : '#000',
+  padding: theme.spacing(1.5),
+  borderRadius: '12px',
+  maxWidth: '70%',
+  wordWrap: 'break-word',
+  marginLeft: isUser ? 'auto' : theme.spacing(1),
+  marginRight: isUser ? theme.spacing(1) : 'auto',
+}));
+
+const ChatContainer = styled(Box)({
+  flexGrow: 1,
+  overflowY: 'auto',
+  marginBottom: '20px',
+  padding: '10px',
+});
+
+const InputContainer = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  gap: theme.spacing(1),
+  padding: theme.spacing(2),
+  borderTop: '1px solid #e0e0e0',
 }));
 
 function AIChat() {
-  const navigate = useNavigate();
   const [messages, setMessages] = useState([
-    { 
-      text: "Hello! I'm your financial AI assistant. How can I help you today?", 
-      isUser: false 
-    }
+    { text: "Hi! I'm your personal financial assistant. How can I help you today?", isUser: false }
   ]);
-  const [inputValue, setInputValue] = useState('');
-  const [error, setError] = useState('');
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const chatContainerRef = useRef(null);
 
   useEffect(() => {
-    scrollToBottom();
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      navigate('/login');
-    }
-  }, [navigate]);
+  const handleSend = async () => {
+    if (!input.trim()) return;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    const userMessage = { text: input, isUser: true };
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
 
     try {
-      setIsLoading(true);
-      const userMessage = inputValue.trim();
-      setInputValue('');
-      
-      // Add user message
-      setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
+      const response = await fetch('http://localhost:8000/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({ message: input })
+      });
 
-      // TODO: Replace with actual API call to your LLM
-      // Simulating API call with a timeout
-      setTimeout(() => {
-        const response = `This is a simulated response to: "${userMessage}". We will connect to our AI LLM here`;
-        setMessages(prev => [...prev, { text: response, isUser: false }]);
-        setIsLoading(false);
-      }, 1000);
+      if (!response.ok) {
+        throw new Error('Failed to get response');
+      }
 
-    } catch (err) {
-      setError('Failed to send message. Please try again.');
+      const data = await response.json();
+      setMessages(prev => [...prev, { text: data.response, isUser: false }]);
+    } catch (error) {
+      console.error('Error:', error);
+      setMessages(prev => [...prev, { 
+        text: "I'm sorry, I'm having trouble connecting right now. Please try again later.", 
+        isUser: false 
+      }]);
+    } finally {
       setIsLoading(false);
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      py: 4
-    }}>
-      <Container maxWidth="md">
-        <StyledPaper elevation={3}>
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            mb: 2,
-            justifyContent: 'space-between'
-          }}>
-            <IconButton 
-              onClick={() => navigate('/profile')}
-              sx={{ color: '#2196F3' }}
-            >
-              <ArrowBackIcon />
-            </IconButton>
-            <Typography variant="h5" align="center">
-              AI Financial Assistant
-            </Typography>
-            <Box sx={{ width: 40 }} /> {/* Spacer for alignment */}
-          </Box>
-
-          {error && (
-            <Typography color="error" align="center" gutterBottom>
-              {error}
-            </Typography>
-          )}
-          
-          <Box sx={{ 
-            flex: 1,
-            overflowY: 'auto', 
-            mb: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-            pr: 1
-          }}>
-            {messages.map((message, index) => (
-              <ChatMessage key={index} isUser={message.isUser}>
+    <Container maxWidth="md">
+      <StyledPaper elevation={3}>
+        <Typography variant="h5" gutterBottom sx={{ textAlign: 'center', color: '#1976d2' }}>
+          Chat with Your Financial Assistant
+        </Typography>
+        
+        <ChatContainer ref={chatContainerRef}>
+          {messages.map((message, index) => (
+            <MessageContainer key={index}>
+              <Avatar sx={{ 
+                bgcolor: message.isUser ? 'primary.main' : 'secondary.main',
+                marginRight: message.isUser ? 'auto' : '0',
+                marginLeft: message.isUser ? '8px' : '0',
+                order: message.isUser ? 2 : 0
+              }}>
+                {message.isUser ? <PersonIcon /> : <SmartToyIcon />}
+              </Avatar>
+              <MessageBubble isUser={message.isUser}>
                 <Typography>{message.text}</Typography>
-              </ChatMessage>
-            ))}
-            {isLoading && (
-              <ChatMessage isUser={false}>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  <CircularProgress size={20} />
-                  <Typography>Thinking...</Typography>
-                </Box>
-              </ChatMessage>
-            )}
-            <div ref={messagesEndRef} />
-          </Box>
+              </MessageBubble>
+            </MessageContainer>
+          ))}
+          {isLoading && (
+            <MessageContainer>
+              <Avatar sx={{ bgcolor: 'secondary.main' }}>
+                <SmartToyIcon />
+              </Avatar>
+              <MessageBubble isUser={false}>
+                <Typography>Thinking...</Typography>
+              </MessageBubble>
+            </MessageContainer>
+          )}
+        </ChatContainer>
 
-          <form onSubmit={handleSubmit}>
-            <Stack direction="row" spacing={1}>
-              <TextField
-                fullWidth
-                variant="outlined"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="Type your message..."
-                multiline
-                maxRows={4}
-                disabled={isLoading}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    borderRadius: '25px',
-                  }
-                }}
-              />
-              <IconButton 
-                type="submit" 
-                disabled={isLoading || !inputValue.trim()}
-                sx={{
-                  backgroundColor: '#2196F3',
-                  color: 'white',
-                  '&:hover': {
-                    backgroundColor: '#1976D2',
-                  },
-                  '&:disabled': {
-                    backgroundColor: '#BDBDBD',
-                  }
-                }}
-              >
-                <SendIcon />
-              </IconButton>
-            </Stack>
-          </form>
-        </StyledPaper>
-      </Container>
-    </Box>
+        <InputContainer>
+          <TextField
+            fullWidth
+            multiline
+            maxRows={4}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Type your message here..."
+            variant="outlined"
+            disabled={isLoading}
+          />
+          <Button
+            variant="contained"
+            color="primary"
+            endIcon={<SendIcon />}
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+          >
+            Send
+          </Button>
+        </InputContainer>
+      </StyledPaper>
+    </Container>
   );
 }
 

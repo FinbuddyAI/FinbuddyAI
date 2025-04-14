@@ -1,0 +1,9 @@
+[
+    {
+      "model": "gpt-4o-mini",
+      "api_key": "FAl6ANGkycSO4pF9RPF0sEYPs6V0yZqoU51t4pjvZDZ5N6P2Xe8KJQQJ99BDACHYHv6XJ3w3AAAAACOGZQ5o",
+      "base_url": "https://ai-gostlucaspp3128ai251258957813.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview",
+      "api_type": "azure",
+      "api_version": "2024-02-15-preview"
+    }
+  ]
