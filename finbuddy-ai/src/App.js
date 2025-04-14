@@ -1,43 +1,87 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material';
-import CssBaseline from '@mui/material/CssBaseline';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Profile from './pages/Profile';
-import OnboardingChat from './pages/OnboardingChat';
-import AIChat from './pages/AIChat';
-import Home from './components/Home';
-
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#2196F3',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-    background: {
-      default: '#1a1a1a',
-    },
-  },
-});
+import Home from './pages/Home';
+import Chat from './pages/Chat';
+import Layout from './components/Layout';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    setIsAuthenticated(!!token);
+  }, []);
+
+  const PrivateRoute = ({ children }) => {
+    return isAuthenticated ? <Layout>{children}</Layout> : <Navigate to="/login" />;
+  };
+
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/onboarding" element={<OnboardingChat />} />
-          <Route path="/chat" element={<AIChat />} />
-        </Routes>
-      </Router>
-    </ThemeProvider>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login setIsAuthenticated={setIsAuthenticated} />} />
+        <Route path="/register" element={<Signup />} />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/home"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/chat"
+          element={
+            <PrivateRoute>
+              <Chat />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/goals"
+          element={
+            <PrivateRoute>
+              <div>Goals Page (Coming Soon)</div>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <PrivateRoute>
+              <div>Analytics Page (Coming Soon)</div>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <div>Settings Page (Coming Soon)</div>
+            </PrivateRoute>
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 

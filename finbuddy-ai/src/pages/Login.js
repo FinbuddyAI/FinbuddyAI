@@ -2,15 +2,15 @@ import { useState } from 'react';
 import { 
   Container, 
   Box, 
+  Typography, 
+  Paper, 
   TextField, 
   Button, 
-  Typography, 
-  Paper,
   Link,
-  Stack
+  Alert
 } from '@mui/material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   background: 'white',
@@ -30,7 +30,7 @@ const StyledText = styled(Typography)(({ theme }) => ({
   textShadow: '0 0 20px rgba(44, 62, 80, 0.2)',
 }));
 
-function Login() {
+function Login({ setIsAuthenticated }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -63,7 +63,8 @@ function Login() {
 
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
-      navigate('/profile');
+      setIsAuthenticated(true);
+      navigate('/home');
     } catch (err) {
       setError(err.message);
     }
@@ -81,12 +82,12 @@ function Login() {
       <Container maxWidth="sm">
         <StyledPaper elevation={3}>
           <StyledText variant="h4" align="center" gutterBottom>
-            Welcome Back
+            Welcome to Finbuddy
           </StyledText>
           {error && (
-            <Typography color="error" align="center" gutterBottom>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
-            </Typography>
+            </Alert>
           )}
           <form onSubmit={handleSubmit}>
             <TextField
@@ -96,7 +97,6 @@ function Login() {
               value={formData.email}
               onChange={handleChange}
               margin="normal"
-              required
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
@@ -113,7 +113,6 @@ function Login() {
               value={formData.password}
               onChange={handleChange}
               margin="normal"
-              required
               sx={{
                 '& .MuiOutlinedInput-root': {
                   '&:hover fieldset': {
@@ -122,50 +121,41 @@ function Login() {
                 },
               }}
             />
-            <Stack spacing={2} sx={{ mt: 3 }}>
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{
-                  background: '#2C3E50',
-                  borderRadius: '25px',
-                  padding: '10px 30px',
-                  boxShadow: '0 4px 15px rgba(44, 62, 80, 0.3)',
-                  textShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
-                  '&:hover': {
-                    background: '#1a252f',
-                    boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
-                  }
-                }}
-              >
-                Sign In
-              </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                onClick={() => navigate('/')}
-                sx={{
-                  color: '#2C3E50',
-                  borderColor: '#2C3E50',
-                  borderRadius: '25px',
-                  padding: '10px 30px',
-                  '&:hover': {
-                    borderColor: '#1a252f',
-                    backgroundColor: 'rgba(44, 62, 80, 0.1)'
-                  }
-                }}
-              >
-                Back to Home
-              </Button>
-            </Stack>
-            <Typography align="center" sx={{ mt: 2, color: '#34495E' }}>
-              Don't have an account?{' '}
-              <Link component={RouterLink} to="/signup" sx={{ color: '#2C3E50' }}>
-                Sign up
-              </Link>
-            </Typography>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{
+                mt: 3,
+                background: '#2C3E50',
+                borderRadius: '25px',
+                padding: '10px 30px',
+                boxShadow: '0 4px 15px rgba(44, 62, 80, 0.3)',
+                textShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
+                '&:hover': {
+                  background: '#1a252f',
+                  boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
+                }
+              }}
+            >
+              Sign In
+            </Button>
           </form>
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Link 
+              href="/register" 
+              variant="body2"
+              sx={{ 
+                color: '#2C3E50',
+                textDecoration: 'none',
+                '&:hover': {
+                  textDecoration: 'underline',
+                }
+              }}
+            >
+              Don't have an account? Sign Up
+            </Link>
+          </Box>
         </StyledPaper>
       </Container>
     </Box>

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { 
   Container, 
   Box, 
+  Typography, 
+  Paper, 
   TextField, 
   Button, 
-  Typography, 
-  Paper,
   Link,
   Stack
 } from '@mui/material';
@@ -52,7 +52,7 @@ function Signup() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:8000/auth/signup', {
+      const response = await fetch('http://localhost:8000/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ function Signup() {
       }
 
       const data = await response.json();
-      localStorage.setItem('token', data.token);
+      localStorage.setItem('token', data.access_token);
       navigate('/profile');
     } catch (err) {
       setError(err.message);
@@ -212,7 +212,7 @@ function Signup() {
                 fullWidth
                 variant="outlined"
                 onClick={() => navigate('/')}
-                sx={{
+                sx={{ 
                   color: '#2C3E50',
                   borderColor: '#2C3E50',
                   borderRadius: '25px',

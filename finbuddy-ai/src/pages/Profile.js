@@ -3,9 +3,8 @@ import {
   Container, 
   Box, 
   Typography, 
-  Paper,
-  Button,
-  Stack,
+  Paper, 
+  Button, 
   Table,
   TableBody,
   TableCell,
@@ -109,11 +108,10 @@ function Profile() {
   if (!user || !bankData) {
     return (
       <Box sx={{ 
-        minHeight: '100vh',
-        background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        height: '100%'
       }}>
         <CircularProgress sx={{ color: '#2C3E50' }} />
       </Box>
@@ -121,141 +119,81 @@ function Profile() {
   }
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      py: 4
-    }}>
-      <Container maxWidth="md">
-        <StyledPaper elevation={3}>
-          <Typography variant="h4" align="center" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
-            Profile
+    <Box sx={{ p: 3 }}>
+      <StyledPaper elevation={3}>
+        <Typography variant="h4" align="center" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
+          Profile
+        </Typography>
+        {error && (
+          <Typography color="error" align="center" gutterBottom>
+            {error}
           </Typography>
-          {error && (
-            <Typography color="error" align="center" gutterBottom>
-              {error}
+        )}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="h6" sx={{ color: '#2C3E50' }}>Username: {user.username}</Typography>
+          <Typography variant="h6" sx={{ color: '#2C3E50' }}>Email: {user.email}</Typography>
+          <Typography variant="h6" sx={{ color: '#2C3E50' }}>Name: {user.first_name} {user.last_name}</Typography>
+        </Box>
+
+        {bankData.accounts && bankData.accounts.length > 0 && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
+              Bank Account
             </Typography>
-          )}
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="h6" sx={{ color: '#2C3E50' }}>Username: {user.username}</Typography>
-            <Typography variant="h6" sx={{ color: '#2C3E50' }}>Email: {user.email}</Typography>
-            <Typography variant="h6" sx={{ color: '#2C3E50' }}>Name: {user.first_name} {user.last_name}</Typography>
-          </Box>
+            <Paper sx={{ p: 2, mb: 3, background: 'white', borderRadius: '15px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
+              <Typography variant="h6" sx={{ color: '#2C3E50' }}>{bankData.accounts[0].name}</Typography>
+              <Typography sx={{ color: '#2C3E50' }}>Account Number: ••••{bankData.accounts[0].mask}</Typography>
+              <Typography sx={{ color: '#2C3E50' }}>Available Balance: ${bankData.accounts[0].balances.available.toFixed(2)}</Typography>
+              <Typography sx={{ color: '#2C3E50' }}>Current Balance: ${bankData.accounts[0].balances.current.toFixed(2)}</Typography>
+            </Paper>
 
-          {bankData.accounts && bankData.accounts.length > 0 && (
-            <Box sx={{ mt: 4 }}>
-              <Typography variant="h5" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
-                Bank Account
-              </Typography>
-              <Paper sx={{ p: 2, mb: 3, background: 'white', borderRadius: '15px', boxShadow: '0 2px 10px rgba(0, 0, 0, 0.05)' }}>
-                <Typography variant="h6" sx={{ color: '#2C3E50' }}>{bankData.accounts[0].name}</Typography>
-                <Typography sx={{ color: '#2C3E50' }}>Account Number: ••••{bankData.accounts[0].mask}</Typography>
-                <Typography sx={{ color: '#2C3E50' }}>Available Balance: ${bankData.accounts[0].balances.available.toFixed(2)}</Typography>
-                <Typography sx={{ color: '#2C3E50' }}>Current Balance: ${bankData.accounts[0].balances.current.toFixed(2)}</Typography>
-              </Paper>
-
-              <Typography variant="h5" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
-                Recent Transactions
-              </Typography>
-              <TransactionPaper>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Date</TableCell>
-                        <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Description</TableCell>
-                        <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Category</TableCell>
-                        <TableCell align="right" sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Amount</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {bankData.transactions.map((transaction) => (
-                        <TableRow key={transaction.transaction_id}>
-                          <TableCell sx={{ color: '#2C3E50' }}>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-                          <TableCell sx={{ color: '#2C3E50' }}>{transaction.name}</TableCell>
-                          <TableCell>
-                            <Chip 
-                              label={transaction.category}
-                              size="small"
-                              sx={{ 
-                                backgroundColor: getCategoryColor(transaction.category),
-                                color: 'white'
-                              }}
-                            />
-                          </TableCell>
-                          <TableCell 
-                            align="right"
+            <Typography variant="h5" gutterBottom sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
+              Recent Transactions
+            </Typography>
+            <TransactionPaper>
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Date</TableCell>
+                      <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Description</TableCell>
+                      <TableCell sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Category</TableCell>
+                      <TableCell align="right" sx={{ color: '#2C3E50', fontWeight: 'bold' }}>Amount</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {bankData.transactions.map((transaction) => (
+                      <TableRow key={transaction.transaction_id}>
+                        <TableCell sx={{ color: '#2C3E50' }}>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                        <TableCell sx={{ color: '#2C3E50' }}>{transaction.name}</TableCell>
+                        <TableCell>
+                          <Chip 
+                            label={transaction.category}
+                            size="small"
                             sx={{ 
-                              color: transaction.amount >= 0 ? '#4CAF50' : '#f44336',
-                              fontWeight: 'bold'
+                              backgroundColor: getCategoryColor(transaction.category),
+                              color: 'white'
                             }}
-                          >
-                            ${Math.abs(transaction.amount).toFixed(2)}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </TransactionPaper>
-            </Box>
-          )}
-
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center', gap: 2 }}>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/onboarding')}
-              sx={{
-                background: '#2C3E50',
-                borderRadius: '25px',
-                padding: '10px 30px',
-                boxShadow: '0 4px 15px rgba(44, 62, 80, 0.3)',
-                '&:hover': {
-                  background: '#1a252f',
-                  boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
-                }
-              }}
-            >
-              Start Onboarding
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => navigate('/chat')}
-              sx={{
-                background: '#2C3E50',
-                borderRadius: '25px',
-                padding: '10px 30px',
-                boxShadow: '0 4px 15px rgba(44, 62, 80, 0.3)',
-                '&:hover': {
-                  background: '#1a252f',
-                  boxShadow: '0 6px 20px rgba(44, 62, 80, 0.4)',
-                }
-              }}
-            >
-              Chat with AI
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={handleLogout}
-              sx={{
-                color: '#2C3E50',
-                borderColor: '#2C3E50',
-                borderRadius: '25px',
-                padding: '10px 30px',
-                '&:hover': {
-                  borderColor: '#1a252f',
-                  backgroundColor: 'rgba(44, 62, 80, 0.1)'
-                }
-              }}
-            >
-              Logout
-            </Button>
+                          />
+                        </TableCell>
+                        <TableCell 
+                          align="right"
+                          sx={{ 
+                            color: transaction.amount >= 0 ? '#4CAF50' : '#f44336',
+                            fontWeight: 'bold'
+                          }}
+                        >
+                          ${Math.abs(transaction.amount).toFixed(2)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </TransactionPaper>
           </Box>
-        </StyledPaper>
-      </Container>
+        )}
+      </StyledPaper>
     </Box>
   );
 }
