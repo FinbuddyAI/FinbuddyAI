@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Container, TextField, Button, Paper, Typography, Avatar } from '@mui/material';
+import { Box, Container, TextField, Button, Paper, Typography, Avatar, Divider } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import SendIcon from '@mui/icons-material/Send';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
@@ -105,29 +105,39 @@ function AIChat() {
   return (
     <Container maxWidth="md">
       <StyledPaper elevation={3}>
-        <Typography variant="h5" gutterBottom sx={{ textAlign: 'center', color: '#1976d2' }}>
-          Chat with Your Financial Assistant
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <SmartToyIcon sx={{ color: '#1976d2', mr: 1 }} />
+          <Typography variant="h6" sx={{ color: '#1976d2' }}>
+            FinBuddy Assistant
+          </Typography>
+        </Box>
+        <Divider sx={{ 
+          mb: 2, 
+          borderColor: 'rgba(0, 0, 0, 0.1)',
+          opacity: 0.5
+        }} />
         
         <ChatContainer ref={chatContainerRef}>
           {messages.map((message, index) => (
             <MessageContainer key={index}>
-              <Avatar sx={{ 
-                bgcolor: message.isUser ? 'primary.main' : 'secondary.main',
-                marginRight: message.isUser ? 'auto' : '0',
-                marginLeft: message.isUser ? '8px' : '0',
-                order: message.isUser ? 2 : 0
-              }}>
-                {message.isUser ? <PersonIcon /> : <SmartToyIcon />}
-              </Avatar>
+              {!message.isUser && (
+                <Avatar sx={{ bgcolor: 'secondary.main', mr: 1 }}>
+                  <SmartToyIcon />
+                </Avatar>
+              )}
               <MessageBubble isUser={message.isUser}>
                 <Typography>{message.text}</Typography>
               </MessageBubble>
+              {message.isUser && (
+                <Avatar sx={{ bgcolor: 'primary.main', ml: 1 }}>
+                  <PersonIcon />
+                </Avatar>
+              )}
             </MessageContainer>
           ))}
           {isLoading && (
             <MessageContainer>
-              <Avatar sx={{ bgcolor: 'secondary.main' }}>
+              <Avatar sx={{ bgcolor: 'secondary.main', mr: 1 }}>
                 <SmartToyIcon />
               </Avatar>
               <MessageBubble isUser={false}>
