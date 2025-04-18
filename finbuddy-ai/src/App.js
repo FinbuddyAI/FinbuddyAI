@@ -58,7 +58,7 @@ function App() {
           }
         />
         <Route
-          path="/onboarding-chat"
+          path="/onboarding"
           element={
             <PrivateRoute>
               <OnboardingChat />

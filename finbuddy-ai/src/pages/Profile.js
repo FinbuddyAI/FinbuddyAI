@@ -13,7 +13,9 @@ import {
   Radio,
   FormControl,
   FormLabel,
-  Divider
+  Divider,
+  Grid,
+  IconButton
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
@@ -21,6 +23,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import SecurityIcon from '@mui/icons-material/Security';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddIcon from '@mui/icons-material/Add';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   background: 'white',
@@ -47,6 +50,7 @@ function Profile() {
   const [user, setUser] = useState(null);
   const [bankData, setBankData] = useState(null);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [suggestionPreference, setSuggestionPreference] = useState('1 week');
   const [contactMethods, setContactMethods] = useState({
     email: true,
@@ -57,7 +61,12 @@ function Profile() {
     firstName: '',
     lastName: '',
     email: '',
-    phone: ''
+    phone: '',
+    suggestionPreference: '1 week',
+    contactMethods: {
+      email: true,
+      phone: false
+    }
   });
 
   useEffect(() => {
@@ -71,7 +80,19 @@ function Profile() {
 
     if (cachedUser) {
       try {
-        setUser(JSON.parse(cachedUser));
+        const parsedUser = JSON.parse(cachedUser);
+        setUser(parsedUser);
+        setFormData({
+          firstName: parsedUser.first_name || '',
+          lastName: parsedUser.last_name || '',
+          email: parsedUser.email || '',
+          phone: parsedUser.phone || '',
+          suggestionPreference: parsedUser.suggestion_preference || '1 week',
+          contactMethods: {
+            email: parsedUser.email_contact || true,
+            phone: parsedUser.phone_contact || false
+          }
+        });
       } catch (err) {
         console.error('Error parsing cached user:', err);
         localStorage.removeItem('user');
@@ -80,12 +101,12 @@ function Profile() {
 
     // Fetch user profile and bank data
     Promise.all([
-      fetch('http://localhost:8000/profile', {
+      fetch('/profile', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       }),
-      fetch('http://localhost:8000/bank/data', {
+      fetch('/bank/data', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -97,6 +118,7 @@ function Profile() {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             navigate('/login');
+            return;
           }
           throw new Error('Failed to fetch data');
         }
@@ -105,14 +127,19 @@ function Profile() {
         setUser(profileData.user);
         setBankData(bankData);
         localStorage.setItem('user', JSON.stringify(profileData.user));
-        if (user) {
-          setFormData({
-            firstName: user.first_name || '',
-            lastName: user.last_name || '',
-            email: user.email || '',
-            phone: user.phone || ''
-          });
-        }
+        
+        // Update form data with new user data
+        setFormData({
+          firstName: profileData.user.first_name || '',
+          lastName: profileData.user.last_name || '',
+          email: profileData.user.email || '',
+          phone: profileData.user.phone || '',
+          suggestionPreference: profileData.user.suggestion_preference || '1 week',
+          contactMethods: {
+            email: profileData.user.email_contact || true,
+            phone: profileData.user.phone_contact || false
+          }
+        });
       })
       .catch(err => {
         console.error('Fetch error:', err);
@@ -120,6 +147,9 @@ function Profile() {
         if (!cachedUser) {
           navigate('/login');
         }
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   }, [navigate]);
 
@@ -148,245 +178,282 @@ function Profile() {
     setEditMode(false);
   };
 
-  if (!user) {
+  if (isLoading) {
     return (
       <Box sx={{ 
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '100%'
+        height: '100vh'
       }}>
         <Typography>Loading...</Typography>
       </Box>
     );
   }
 
-  return (
-    <Container maxWidth="lg" sx={{ py: 2 }}>
-      <TitleBox>
-        <Typography variant="h5" gutterBottom>
-          Profile & Settings
-        </Typography>
-        <Typography variant="body2">
-          Manage your account preferences and security settings
-        </Typography>
-      </TitleBox>
+  if (!user) {
+    return (
+      <Box sx={{ 
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '100vh'
+      }}>
+        <Typography>Error loading profile. Please try again.</Typography>
+      </Box>
+    );
+  }
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
-        {/* Left Column - Profile Overview */}
-        <Box sx={{ flex: 2 }}>
-          <StyledPaper>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="subtitle1" color="text.secondary">
-                Profile Overview
+  return (
+    <Box sx={{ 
+      minHeight: '100vh',
+      background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+      display: 'flex',
+      flexDirection: 'column',
+      p: 2
+    }}>
+      <Container maxWidth="lg">
+        <TitleBox>
+          <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
+            Profile & Settings
+          </Typography>
+          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+            Manage your account preferences and security settings
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<SmartToyIcon />}
+            size="small"
+            sx={{ 
+              mt: 2,
+              background: 'white',
+              color: '#2C3E50',
+              '&:hover': {
+                background: 'rgba(255, 255, 255, 0.9)'
+              }
+            }}
+            onClick={() => navigate('/onboarding')}
+          >
+            Start Onboarding Chat
+          </Button>
+        </TitleBox>
+
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          {/* Left Column - Profile Overview */}
+          <Box sx={{ flex: 2 }}>
+            <StyledPaper>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Profile Overview
+                </Typography>
+                {editMode ? (
+                  <Button 
+                    size="small" 
+                    variant="contained" 
+                    onClick={handleSaveProfile}
+                  >
+                    Save Changes
+                  </Button>
+                ) : (
+                  <Button 
+                    size="small" 
+                    variant="outlined" 
+                    onClick={() => setEditMode(true)}
+                  >
+                    Edit Profile
+                  </Button>
+                )}
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Avatar sx={{ width: 60, height: 60, mr: 2 }}>
+                  <PersonIcon sx={{ fontSize: 30 }} />
+                </Avatar>
+                <Box>
+                  <Typography variant="body2" color="text.secondary">
+                    Current Plan
+                  </Typography>
+                  <Typography variant="subtitle1">
+                    Free Plan
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ width: '80px', color: 'text.secondary' }}>Name:</Typography>
+                  {editMode ? (
+                    <Box sx={{ display: 'flex', gap: 1, flex: 1 }}>
+                      <TextField
+                        size="small"
+                        value={formData.firstName}
+                        onChange={handleInputChange('firstName')}
+                        placeholder="First Name"
+                        sx={{ flex: 1 }}
+                      />
+                      <TextField
+                        size="small"
+                        value={formData.lastName}
+                        onChange={handleInputChange('lastName')}
+                        placeholder="Last Name"
+                        sx={{ flex: 1 }}
+                      />
+                    </Box>
+                  ) : (
+                    <Typography variant="body2">{user.first_name} {user.last_name}</Typography>
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ width: '80px', color: 'text.secondary' }}>Email:</Typography>
+                  {editMode ? (
+                    <TextField
+                      size="small"
+                      value={formData.email}
+                      onChange={handleInputChange('email')}
+                      fullWidth
+                    />
+                  ) : (
+                    <Typography variant="body2">{user.email}</Typography>
+                  )}
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="body2" sx={{ width: '80px', color: 'text.secondary' }}>Phone:</Typography>
+                  {editMode ? (
+                    <TextField
+                      size="small"
+                      value={formData.phone}
+                      onChange={handleInputChange('phone')}
+                      fullWidth
+                    />
+                  ) : (
+                    <Typography variant="body2">{user.phone || 'Not set'}</Typography>
+                  )}
+                </Box>
+              </Box>
+            </StyledPaper>
+
+            {/* Security Settings */}
+            <StyledPaper sx={{ mt: 2 }}>
+              <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                Security Settings
               </Typography>
-              {editMode ? (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <TextField
+                  size="small"
+                  label="Current Password"
+                  type="password"
+                  fullWidth
+                />
+                <TextField
+                  size="small"
+                  label="New Password"
+                  type="password"
+                  fullWidth
+                />
+                <TextField
+                  size="small"
+                  label="Confirm New Password"
+                  type="password"
+                  fullWidth
+                />
                 <Button 
-                  size="small" 
                   variant="contained" 
-                  onClick={handleSaveProfile}
+                  size="small"
+                  sx={{ alignSelf: 'flex-start' }}
                 >
-                  Save Changes
+                  Update Password
                 </Button>
-              ) : (
+              </Box>
+            </StyledPaper>
+          </Box>
+
+          {/* Right Column - Preferences */}
+          <Box sx={{ flex: 1 }}>
+            <StyledPaper>
+              <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                Preferences
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <FormControl component="fieldset" size="small">
+                  <FormLabel component="legend">Suggestion Preference</FormLabel>
+                  <RadioGroup
+                    value={formData.suggestionPreference}
+                    onChange={(e) => setFormData({ ...formData, suggestionPreference: e.target.value })}
+                  >
+                    <FormControlLabel value="1 day" control={<Radio size="small" />} label="1 day" />
+                    <FormControlLabel value="1 week" control={<Radio size="small" />} label="1 week" />
+                    <FormControlLabel value="1 month" control={<Radio size="small" />} label="1 month" />
+                  </RadioGroup>
+                </FormControl>
+
+                <FormControl component="fieldset" size="small">
+                  <FormLabel component="legend">Contact Method</FormLabel>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={formData.contactMethods.email}
+                        onChange={handleContactMethodChange('email')}
+                      />
+                    }
+                    label="Email"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={formData.contactMethods.phone}
+                        onChange={handleContactMethodChange('phone')}
+                      />
+                    }
+                    label="Phone"
+                  />
+                </FormControl>
+              </Box>
+            </StyledPaper>
+
+            {/* Connected Accounts */}
+            <StyledPaper sx={{ mt: 2 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="subtitle1" color="text.secondary">
+                  Connected Accounts
+                </Typography>
                 <Button 
                   size="small" 
                   variant="outlined" 
-                  onClick={() => setEditMode(true)}
+                  startIcon={<AddIcon />}
+                  sx={{ 
+                    color: '#3498db',
+                    borderColor: '#3498db',
+                    '&:hover': {
+                      borderColor: '#2980b9',
+                      backgroundColor: 'rgba(52, 152, 219, 0.1)'
+                    }
+                  }}
                 >
-                  Edit Profile
+                  Add Account
                 </Button>
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Avatar sx={{ width: 60, height: 60, mr: 2 }}>
-                <PersonIcon sx={{ fontSize: 30 }} />
-              </Avatar>
-              <Box>
-                <Typography variant="body2" color="text.secondary">
-                  Current Plan
-                </Typography>
-                <Typography variant="subtitle1">
-                  Free Plan
-                </Typography>
               </Box>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ width: '80px', color: 'text.secondary' }}>Name:</Typography>
-                {editMode ? (
-                  <Box sx={{ display: 'flex', gap: 1, flex: 1 }}>
-                    <TextField
-                      size="small"
-                      value={formData.firstName}
-                      onChange={handleInputChange('firstName')}
-                      placeholder="First Name"
-                      sx={{ flex: 1 }}
-                    />
-                    <TextField
-                      size="small"
-                      value={formData.lastName}
-                      onChange={handleInputChange('lastName')}
-                      placeholder="Last Name"
-                      sx={{ flex: 1 }}
-                    />
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <AccountBalanceIcon sx={{ color: '#2C3E50', fontSize: '1.2rem' }} />
+                  <Box>
+                    <Typography variant="body2">Chase Bank</Typography>
+                    <Typography variant="caption" color="text.secondary">••••1234</Typography>
                   </Box>
-                ) : (
-                  <Typography variant="body2">{user.first_name} {user.last_name}</Typography>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ width: '80px', color: 'text.secondary' }}>Email:</Typography>
-                {editMode ? (
-                  <TextField
-                    size="small"
-                    value={formData.email}
-                    onChange={handleInputChange('email')}
-                    fullWidth
-                  />
-                ) : (
-                  <Typography variant="body2">{user.email}</Typography>
-                )}
-              </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="body2" sx={{ width: '80px', color: 'text.secondary' }}>Phone:</Typography>
-                {editMode ? (
-                  <TextField
-                    size="small"
-                    value={formData.phone}
-                    onChange={handleInputChange('phone')}
-                    fullWidth
-                  />
-                ) : (
-                  <Typography variant="body2">{user.phone || 'Not set'}</Typography>
-                )}
-              </Box>
-            </Box>
-          </StyledPaper>
-
-          {/* Security Settings */}
-          <StyledPaper sx={{ mt: 2 }}>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              Security Settings
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <TextField
-                size="small"
-                label="Current Password"
-                type="password"
-                fullWidth
-              />
-              <TextField
-                size="small"
-                label="New Password"
-                type="password"
-                fullWidth
-              />
-              <TextField
-                size="small"
-                label="Confirm New Password"
-                type="password"
-                fullWidth
-              />
-              <Button 
-                variant="contained" 
-                size="small"
-                sx={{ alignSelf: 'flex-start' }}
-              >
-                Update Password
-              </Button>
-            </Box>
-          </StyledPaper>
-        </Box>
-
-        {/* Right Column - Preferences */}
-        <Box sx={{ flex: 1 }}>
-          <StyledPaper>
-            <Typography variant="subtitle1" color="text.secondary" gutterBottom>
-              Preferences
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <FormControl component="fieldset" size="small">
-                <FormLabel component="legend">Suggestion Preference</FormLabel>
-                <RadioGroup
-                  value={suggestionPreference}
-                  onChange={(e) => setSuggestionPreference(e.target.value)}
-                >
-                  <FormControlLabel value="1 day" control={<Radio size="small" />} label="1 day" />
-                  <FormControlLabel value="1 week" control={<Radio size="small" />} label="1 week" />
-                  <FormControlLabel value="1 month" control={<Radio size="small" />} label="1 month" />
-                </RadioGroup>
-              </FormControl>
-
-              <FormControl component="fieldset" size="small">
-                <FormLabel component="legend">Contact Method</FormLabel>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={contactMethods.email}
-                      onChange={handleContactMethodChange('email')}
-                    />
-                  }
-                  label="Email"
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      size="small"
-                      checked={contactMethods.phone}
-                      onChange={handleContactMethodChange('phone')}
-                    />
-                  }
-                  label="Phone"
-                />
-              </FormControl>
-            </Box>
-          </StyledPaper>
-
-          {/* Connected Accounts */}
-          <StyledPaper sx={{ mt: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-              <Typography variant="subtitle1" color="text.secondary">
-                Connected Accounts
-              </Typography>
-              <Button 
-                size="small" 
-                variant="outlined" 
-                startIcon={<AddIcon />}
-                sx={{ 
-                  color: '#3498db',
-                  borderColor: '#3498db',
-                  '&:hover': {
-                    borderColor: '#2980b9',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)'
-                  }
-                }}
-              >
-                Add Account
-              </Button>
-            </Box>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <AccountBalanceIcon sx={{ color: '#2C3E50', fontSize: '1.2rem' }} />
-                <Box>
-                  <Typography variant="body2">Chase Bank</Typography>
-                  <Typography variant="caption" color="text.secondary">••••1234</Typography>
+                </Box>
+                <Divider />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <AccountBalanceIcon sx={{ color: '#2C3E50', fontSize: '1.2rem' }} />
+                  <Box>
+                    <Typography variant="body2">Bank of America</Typography>
+                    <Typography variant="caption" color="text.secondary">••••5678</Typography>
+                  </Box>
                 </Box>
               </Box>
-              <Divider />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                <AccountBalanceIcon sx={{ color: '#2C3E50', fontSize: '1.2rem' }} />
-                <Box>
-                  <Typography variant="body2">Bank of America</Typography>
-                  <Typography variant="caption" color="text.secondary">••••5678</Typography>
-                </Box>
-              </Box>
-            </Box>
-          </StyledPaper>
+            </StyledPaper>
+          </Box>
         </Box>
-      </Box>
-    </Container>
+      </Container>
+    </Box>
   );
 }
 
