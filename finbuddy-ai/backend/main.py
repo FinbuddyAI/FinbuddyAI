@@ -84,7 +84,7 @@ class OnboardingMessage(BaseModel):
 # Initialize database
 def init_db():
     try:
-        conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+        conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
         
         # Create users table
@@ -146,7 +146,7 @@ def init_db():
 init_db()
 
 def get_db_connection():
-    return psycopg2.connect(DATABASE_URL, sslmode='require')
+    return psycopg2.connect(DATABASE_URL)
 
 def generate_mock_bank_data(user_id):
     account_id = f"acct_{uuid.uuid4()}"
