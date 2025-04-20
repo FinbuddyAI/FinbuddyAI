@@ -62,6 +62,14 @@ def get_token_from_header(credentials: HTTPAuthorizationCredentials = Depends(se
     return credentials.credentials
 
 # Models
+class User(BaseModel):
+    id: int
+    email: str
+    username: str
+    first_name: str
+    last_name: str
+    phone_number: str
+
 class UserCreate(BaseModel):
     email: str
     password: str
@@ -80,6 +88,36 @@ class ChatMessage(BaseModel):
 # Onboarding models
 class OnboardingMessage(BaseModel):
     content: str
+
+# Get current user from token
+async def get_current_user(token: str = Depends(get_token_from_header)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        
+        try:
+            cur.execute("""
+                SELECT id, email, username, first_name, last_name, phone_number
+                FROM users
+                WHERE email = %s
+            """, (email,))
+            user = cur.fetchone()
+            if not user:
+                raise HTTPException(status_code=404, detail="User not found")
+            
+            return User(**user)
+        finally:
+            cur.close()
+            conn.close()
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Initialize database
 def init_db():
@@ -543,6 +581,65 @@ async def get_onboarding_goals(token: str = Depends(get_token_from_header)):
         return {"goals": goals}
     except Exception as e:
         print(f"Error in get_onboarding_goals: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/goals/saving")
+async def get_saving_goals(current_user: User = Depends(get_current_user)):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT goal_id, category, target_amount, current_amount, target_date, created_at, last_adjusted_at
+                    FROM saving_goals
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                """, (current_user.id,))
+                goals = cur.fetchall()
+                
+                return {
+                    "saving_goals": [
+                        {
+                            "id": goal[0],
+                            "category": goal[1],
+                            "target_amount": float(goal[2]),
+                            "current_amount": float(goal[3]),
+                            "date": goal[4].isoformat(),
+                            "created_at": goal[5].isoformat(),
+                            "last_adjusted_at": goal[6].isoformat()
+                        }
+                        for goal in goals
+                    ]
+                }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/goals/spending")
+async def get_spending_goals(current_user: User = Depends(get_current_user)):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT goal_id, category, target_amount, current_amount, created_at, last_adjusted_at
+                    FROM spending_goals
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                """, (current_user.id,))
+                goals = cur.fetchall()
+                
+                return {
+                    "spending_goals": [
+                        {
+                            "id": goal[0],
+                            "category": goal[1],
+                            "target_amount": float(goal[2]),
+                            "current_amount": float(goal[3]),
+                            "created_at": goal[4].isoformat(),
+                            "last_adjusted_at": goal[5].isoformat()
+                        }
+                        for goal in goals
+                    ]
+                }
+    except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # Include the onboarding router

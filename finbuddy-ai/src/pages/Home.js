@@ -60,6 +60,8 @@ function Home() {
   const [userData, setUserData] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [savingGoals, setSavingGoals] = useState([]);
+  const [spendingGoals, setSpendingGoals] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,19 +72,44 @@ function Home() {
           return;
         }
 
-        const response = await fetch('http://localhost:8000/bank/data', {
+        // Fetch bank data
+        const bankResponse = await fetch('http://localhost:8000/bank/data', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch data');
+        if (!bankResponse.ok) {
+          throw new Error('Failed to fetch bank data');
         }
 
-        const data = await response.json();
-        setUserData(data);
-        setTransactions(data.transactions.slice(0, 5));
+        const bankData = await bankResponse.json();
+        setUserData(bankData);
+        setTransactions(bankData.transactions.slice(0, 5));
+
+        // Fetch saving goals
+        const savingGoalsResponse = await fetch('http://localhost:8000/goals/saving', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (savingGoalsResponse.ok) {
+          const savingData = await savingGoalsResponse.json();
+          setSavingGoals(savingData.saving_goals);
+        }
+
+        // Fetch spending goals
+        const spendingGoalsResponse = await fetch('http://localhost:8000/goals/spending', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (spendingGoalsResponse.ok) {
+          const spendingData = await spendingGoalsResponse.json();
+          setSpendingGoals(spendingData.spending_goals);
+        }
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -246,9 +273,38 @@ function Home() {
                   <TrendingUpIcon />
                 </IconButton>
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                No active goals yet
-              </Typography>
+              {savingGoals.length > 0 ? (
+                <Box>
+                  {savingGoals.map((goal) => (
+                    <Box key={goal.id} sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                          {goal.category.replace('_', ' ')}
+                        </Typography>
+                        <Typography variant="body2">
+                          ${goal.current_amount.toFixed(2)} / ${goal.target_amount.toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={(goal.current_amount / goal.target_amount) * 100} 
+                        sx={{ 
+                          height: 6, 
+                          borderRadius: 3,
+                          backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: '#2ecc71'
+                          }
+                        }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No saving goals yet
+                </Typography>
+              )}
             </StyledPaper>
           </Grid>
         </Grid>
@@ -266,9 +322,38 @@ function Home() {
                   <TimelineIcon />
                 </IconButton>
               </Box>
-              <Typography variant="body2" color="text.secondary">
-                No active goals yet
-              </Typography>
+              {spendingGoals.length > 0 ? (
+                <Box>
+                  {spendingGoals.map((goal) => (
+                    <Box key={goal.id} sx={{ mb: 2 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                          {goal.category}
+                        </Typography>
+                        <Typography variant="body2">
+                          ${goal.current_amount.toFixed(2)} / ${goal.target_amount.toFixed(2)}
+                        </Typography>
+                      </Box>
+                      <LinearProgress 
+                        variant="determinate" 
+                        value={(goal.current_amount / goal.target_amount) * 100} 
+                        sx={{ 
+                          height: 6, 
+                          borderRadius: 3,
+                          backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                          '& .MuiLinearProgress-bar': {
+                            backgroundColor: '#3498db'
+                          }
+                        }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  No spending goals yet
+                </Typography>
+              )}
             </StyledPaper>
           </Grid>
 

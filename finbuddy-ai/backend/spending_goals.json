@@ -1,0 +1,36 @@
+{
+  "spending_goals": [
+    {
+      "id": "sg_001",
+      "category": "food",
+      "target_amount": 500.00,
+      "current_amount": 60.00,
+      "created_at": "2024-04-01T00:00:00Z",
+      "last_adjusted_at": "2024-04-15T00:00:00Z"
+    },
+    {
+      "id": "sg_002",
+      "category": "transportation",
+      "target_amount": 300.00,
+      "current_amount":30.00,
+      "created_at": "2024-04-01T00:00:00Z",
+      "last_adjusted_at": "2024-04-15T00:00:00Z"
+    },
+    {
+      "id": "sg_003",
+      "category": "shopping",
+      "target_amount": 400.00,
+      "current_amount": 100.00,
+      "created_at": "2024-04-01T00:00:00Z",
+      "last_adjusted_at": "2024-04-15T00:00:00Z"
+    },
+    {
+      "id": "sg_004",
+      "category": "travel",
+      "target_amount": 200.00,
+      "current_amount": 80.00,
+      "created_at": "2024-04-01T00:00:00Z",
+      "last_adjusted_at": "2024-04-15T00:00:00Z"
+    }
+  ]
+} 

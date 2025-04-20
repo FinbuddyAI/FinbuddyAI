@@ -63,6 +63,35 @@ def init_db():
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+        # Create spending_goals table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS spending_goals (
+                id SERIAL PRIMARY KEY,
+                goal_id VARCHAR(50) UNIQUE NOT NULL,
+                user_id INTEGER REFERENCES users(id),
+                category VARCHAR(50) NOT NULL,
+                target_amount DECIMAL(10,2) NOT NULL,
+                current_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                last_adjusted_at TIMESTAMP WITH TIME ZONE NOT NULL
+            )
+        """)
+
+        # Create saving_goals table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS saving_goals (
+                id SERIAL PRIMARY KEY,
+                goal_id VARCHAR(50) UNIQUE NOT NULL,
+                user_id INTEGER REFERENCES users(id),
+                category VARCHAR(50) NOT NULL,
+                target_amount DECIMAL(10,2) NOT NULL,
+                current_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
+                target_date TIMESTAMP WITH TIME ZONE NOT NULL,
+                created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+                last_adjusted_at TIMESTAMP WITH TIME ZONE NOT NULL
+            )
+        """)
         
         conn.commit()
         print("Database tables created successfully")
