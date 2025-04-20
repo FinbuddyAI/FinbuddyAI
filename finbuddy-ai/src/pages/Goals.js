@@ -24,8 +24,6 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
   transition: 'transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out',
-  height: '100%',
-  minHeight: '120px',
   display: 'flex',
   flexDirection: 'column',
   '&:hover': {
@@ -176,7 +174,7 @@ function Goals() {
         <Grid container spacing={2}>
           {/* Left Box - Goal Progress Overview */}
           <Grid item xs={12} md={8}>
-            <StyledPaper>
+            <StyledPaper sx={{ height: 'fit-content' }}>
               <Typography variant="h6" gutterBottom>
                 Goal Progress Overview
               </Typography>
@@ -205,7 +203,7 @@ function Goals() {
                   </Grid>
                 </Grid>
 
-                <Box sx={{ mt: 2 }}>
+                <Box sx={{ mt: 1 }}>
                   <Typography variant="h6" gutterBottom>
                     Saving Goals
                   </Typography>
@@ -240,7 +238,7 @@ function Goals() {
 
           {/* Right Box - Goals Ideal for You */}
           <Grid item xs={12} md={4}>
-            <StyledPaper>
+            <StyledPaper sx={{ height: 'fit-content' }}>
               <Typography variant="h6" gutterBottom>
                 Goals Ideal for You
               </Typography>
@@ -263,7 +261,7 @@ function Goals() {
         </Grid>
 
         {/* Active Goals Section */}
-        <Box sx={{ mt: 6 }}>
+        <Box sx={{ mt: 2 }}>
           <StyledPaper>
             <Typography variant="h6" gutterBottom>
               Active Goals
@@ -271,7 +269,7 @@ function Goals() {
             <Grid container spacing={2}>
               {spendingGoals.map((goal) => (
                 <Grid item xs={12} sm={6} key={goal.id}>
-                  <Paper sx={{ p: 2, height: '100%' }}>
+                  <Paper sx={{ p: 1, height: '100%' }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>
                         {goal.category}
