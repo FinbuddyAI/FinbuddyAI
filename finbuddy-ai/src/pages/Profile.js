@@ -216,7 +216,7 @@ function Profile() {
         <TitleBox>
           <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
             Profile & Settings
-          </Typography>
+        </Typography>
           <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Manage your account preferences and security settings
           </Typography>
@@ -363,14 +363,14 @@ function Profile() {
                 </Button>
               </Box>
             </StyledPaper>
-          </Box>
+        </Box>
 
           {/* Right Column - Preferences */}
           <Box sx={{ flex: 1 }}>
             <StyledPaper>
               <Typography variant="subtitle1" color="text.secondary" gutterBottom>
                 Preferences
-              </Typography>
+            </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                 <FormControl component="fieldset" size="small">
                   <FormLabel component="legend">Suggestion Preference</FormLabel>
@@ -415,12 +415,12 @@ function Profile() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="subtitle1" color="text.secondary">
                   Connected Accounts
-                </Typography>
+            </Typography>
                 <Button 
-                  size="small" 
+                            size="small"
                   variant="outlined" 
                   startIcon={<AddIcon />}
-                  sx={{ 
+                            sx={{ 
                     color: '#3498db',
                     borderColor: '#3498db',
                     '&:hover': {

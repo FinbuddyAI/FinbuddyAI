@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import AIChat from './pages/AIChat';
 import OnboardingChat from './pages/OnboardingChat';
 import Layout from './components/Layout';
+import Goals from './pages/Goals';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -69,7 +70,7 @@ function App() {
           path="/goals"
           element={
             <PrivateRoute>
-              <div>Goals Page (Coming Soon)</div>
+              <Goals />
             </PrivateRoute>
           }
         />
