@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
 import psycopg2
@@ -13,6 +12,9 @@ from datetime import datetime, timedelta
 import uuid
 import sys
 from pathlib import Path
+from database import get_db, init_db
+from chat.routes import router as chat_router
+from auth import get_current_user, get_token_from_header, security, SECRET_KEY, ALGORITHM
 
 # Add the onboarding directory to the Python path
 onboarding_path = str(Path(__file__).parent.parent / "onboarding")
@@ -25,7 +27,6 @@ from onboarding_agent import OnboardingAgent
 load_dotenv()
 
 app = FastAPI()
-security = HTTPBearer()
 
 # Create onboarding router
 onboarding_router = APIRouter(prefix="/onboarding", tags=["onboarding"])
@@ -54,13 +55,6 @@ pwd_context = CryptContext(
     bcrypt__rounds=12
 )
 
-# JWT settings
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
-
-def get_token_from_header(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return credentials.credentials
-
 # Models
 class User(BaseModel):
     id: int
@@ -88,36 +82,6 @@ class ChatMessage(BaseModel):
 # Onboarding models
 class OnboardingMessage(BaseModel):
     content: str
-
-# Get current user from token
-async def get_current_user(token: str = Depends(get_token_from_header)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        try:
-            cur.execute("""
-                SELECT id, email, username, first_name, last_name, phone_number
-                FROM users
-                WHERE email = %s
-            """, (email,))
-            user = cur.fetchone()
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
-            
-            return User(**user)
-        finally:
-            cur.close()
-            conn.close()
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 # Initialize database
 def init_db():
@@ -518,12 +482,13 @@ async def chat(message: ChatMessage, token: str = Depends(get_token_from_header)
         if email is None:
             raise HTTPException(status_code=401, detail="Invalid token")
         
-        # TODO: Replace with actual AI model integration
-        # For now, return a simple response
-        return {
-            "response": f"I received your message: '{message.message}'. This is a placeholder response until we integrate the AI model."
-        }
+        # Initialize the LLM
+        from chat.simple_llm import SimpleLLM
+        llm = SimpleLLM()
         
+        # Get response from LLM
+        response = await llm.get_response(message.message)
+        return {"response": response}
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
@@ -531,7 +496,7 @@ async def chat(message: ChatMessage, token: str = Depends(get_token_from_header)
 
 @app.get("/")
 async def root():
-    return {"message": "API is running!"}
+    return {"message": "Welcome to FinBuddy AI API"}
 
 # Onboarding routes
 @onboarding_router.post("/start")
@@ -643,4 +608,7 @@ async def get_spending_goals(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Include the onboarding router
-app.include_router(onboarding_router) 
+app.include_router(onboarding_router)
+
+# Include the chat router
+app.include_router(chat_router, prefix="/api/chat") 
