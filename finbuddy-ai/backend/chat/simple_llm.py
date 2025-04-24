@@ -16,6 +16,11 @@ class SimpleLLM:
         # Initialize MCP session
         self.mcp_session = None
         self._init_task = None
+        
+        # Add project root to Python path
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        if project_root not in sys.path:
+            sys.path.insert(0, project_root)
     
     async def initialize(self):
         """Initialize the MCP session asynchronously."""
@@ -25,10 +30,14 @@ class SimpleLLM:
     
     async def _init_mcp_session(self):
         """Connect to the existing MCP server."""
-        # Create server parameters for connecting to existing server
+        # Get the absolute path to mcp_server.py
+        mcp_server_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "mcp_server.py")
+        
+        # Create server parameters for stdio connection
         server_params = StdioServerParameters(
-            command="",  # Empty command since server is already running
-            cwd=os.getcwd()  # Current working directory
+            command="python",  # Executable
+            args=[mcp_server_path],  # Direct path to the script
+            env=None  # Optional environment variables
         )
         
         # Connect to the MCP server using stdio_client
