@@ -21,6 +21,10 @@ async def send_message(
     current_user = Depends(get_current_user)
 ):
     try:
+        # Initialize the SimpleLLM instance if needed
+        await simple_llm.initialize()
+        
+        # Get response from the LLM
         response = await simple_llm.get_response(message.message)
         return ChatResponse(response=response)
     except Exception as e:

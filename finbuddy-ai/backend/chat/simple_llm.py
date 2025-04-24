@@ -1,9 +1,11 @@
 import os
 import json
 import asyncio
+import sys
 from typing import List, Dict, Any
 from mcp import ClientSession, StdioServerParameters
-from mcp.types import CreateMessageRequestParams
+from mcp.types import CreateMessageRequestParams, Tool
+from mcp.client.stdio import stdio_client
 from .db_operations import query_database, update_database
 
 class SimpleLLM:
@@ -13,63 +15,72 @@ class SimpleLLM:
         
         # Initialize MCP session
         self.mcp_session = None
-        self._init_mcp_session()
+        self._init_task = None
     
-    def _init_mcp_session(self):
-        """Initialize the MCP session with server parameters."""
+    async def initialize(self):
+        """Initialize the MCP session asynchronously."""
+        if self._init_task is None:
+            self._init_task = asyncio.create_task(self._init_mcp_session())
+        await self._init_task
+    
+    async def _init_mcp_session(self):
+        """Connect to the existing MCP server."""
+        # Create server parameters for connecting to existing server
         server_params = StdioServerParameters(
-            command=["python", "-m", "backend.chat.mcp_server"]
+            command="",  # Empty command since server is already running
+            cwd=os.getcwd()  # Current working directory
         )
         
-        self.mcp_session = ClientSession(server_params)
-        
-        # Register tools with MCP
-        self._register_tools()
+        # Connect to the MCP server using stdio_client
+        async with stdio_client(server_params) as (read, write):
+            self.mcp_session = ClientSession(read, write)
+            
+            # Register tools with MCP
+            await self._register_tools()
     
-    def _register_tools(self):
+    async def _register_tools(self):
         """Register available tools with MCP."""
         tools = [
-            {
-                "type": "function",
-                "function": {
-                    "name": "query_database",
-                    "description": "Query the database with a SQL query",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The SQL query to execute"
-                            }
-                        },
-                        "required": ["query"]
-                    }
+            Tool(
+                name="query_database",
+                description="Query the database with a SQL query",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The SQL query to execute"
+                        }
+                    },
+                    "required": ["query"]
                 }
-            },
-            {
-                "type": "function",
-                "function": {
-                    "name": "update_database",
-                    "description": "Update the database with a SQL query",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": "The SQL query to execute"
-                            }
-                        },
-                        "required": ["query"]
-                    }
+            ),
+            Tool(
+                name="update_database",
+                description="Update the database with a SQL query",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The SQL query to execute"
+                        }
+                    },
+                    "required": ["query"]
                 }
-            }
+            )
         ]
         
-        self.mcp_session.register_tools(tools)
+        # Register tools using the correct method
+        await self.mcp_session.call_tool("register_tools", {"tools": tools})
     
     async def get_response(self, message: str) -> str:
         """Get a response from the LLM for the given message."""
         try:
+            # Ensure MCP session is initialized
+            if self.mcp_session is None:
+                await self.initialize()
+            
             # Add user message to conversation history
             self.conversation_history.append({
                 "role": "user",
