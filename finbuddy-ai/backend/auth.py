@@ -21,6 +21,12 @@ def get_token_from_header(credentials: HTTPAuthorizationCredentials = Depends(se
 def get_db_connection():
     return psycopg2.connect(os.getenv("DATABASE_URL"))
 
+def convert_to_dict(row):
+    """Convert RealDictRow to regular dictionary"""
+    if row is None:
+        return None
+    return dict(row)
+
 async def get_current_user(token: str = Depends(get_token_from_header)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -41,11 +47,14 @@ async def get_current_user(token: str = Depends(get_token_from_header)):
             if not user:
                 raise HTTPException(status_code=404, detail="User not found")
             
-            return user
+            user_dict = convert_to_dict(user)
+            print(f"Debug - User object structure: {user_dict}")  # Debug log
+            return user_dict
         finally:
             cur.close()
             conn.close()
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
+        print(f"Debug - Error in get_current_user: {str(e)}")  # Debug log
         raise HTTPException(status_code=500, detail=str(e)) 
