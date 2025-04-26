@@ -18,6 +18,8 @@ from chat.routes import router as chat_router
 from auth import get_current_user, get_token_from_header, security, SECRET_KEY, ALGORITHM
 from goal_refine.goal_adjuster import detect_unusual_transactions, detect_additional_income, adjust_goals
 from goal_refine.goal_history_tracker import GoalHistoryTracker
+from chat.mcp_server import mcp_server
+from fastapi import WebSocket
 
 # Add the onboarding directory to the Python path
 onboarding_path = str(Path(__file__).parent.parent / "onboarding")
@@ -928,4 +930,9 @@ async def detect_anomalies(token: str = Depends(get_token_from_header)):
         raise he
     except Exception as e:
         print(f"Debug - Unexpected error: {str(e)}")  # Debug log
-        raise HTTPException(status_code=500, detail=str(e)) 
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Add MCP WebSocket endpoint
+@app.websocket("/api/ws/mcp")
+async def websocket_endpoint(websocket: WebSocket):
+    await mcp_server.handle_websocket(websocket) 
