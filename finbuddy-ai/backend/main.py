@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
@@ -19,7 +19,6 @@ from auth import get_current_user, get_token_from_header, security, SECRET_KEY, 
 from goal_refine.goal_adjuster import detect_unusual_transactions, detect_additional_income, adjust_goals
 from goal_refine.goal_history_tracker import GoalHistoryTracker
 from chat.mcp_server import mcp_server
-from fastapi import WebSocket
 
 # Add the onboarding directory to the Python path
 onboarding_path = str(Path(__file__).parent.parent / "onboarding")
@@ -45,13 +44,13 @@ onboarding_agent.create_agents()
 # Initialize goal history tracker
 goal_history_tracker = GoalHistoryTracker()
 
-# Add CORS middleware
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["*"],  # Allows all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
 )
 
 # Database connection
@@ -933,6 +932,10 @@ async def detect_anomalies(token: str = Depends(get_token_from_header)):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Add MCP WebSocket endpoint
-@app.websocket("/api/ws/mcp")
+@app.websocket("/ws/mcp")
 async def websocket_endpoint(websocket: WebSocket):
-    await mcp_server.handle_websocket(websocket) 
+    await mcp_server.handle_websocket(websocket)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000) 

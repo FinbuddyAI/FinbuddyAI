@@ -6,11 +6,10 @@ from mcp.server import Server
 from mcp.types import CreateMessageRequestParams, CreateMessageResult, TextContent, Tool
 from mcp.server.models import InitializationOptions
 from openai import OpenAI
-import asyncio
-import signal
-from mcp.server.stdio import stdio_server
 from dotenv import load_dotenv
 from .db_operations import query_database, update_database
+from fastapi import WebSocket, WebSocketDisconnect
+import asyncio
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -43,6 +42,7 @@ class MCPLLMServer(Server):
             
             self.model = model
             self.temperature = temperature
+            self.connected_clients = set()
             
             # Define tools
             self.tools = [
@@ -80,6 +80,79 @@ class MCPLLMServer(Server):
             logger.error(f"Error loading configuration: {str(e)}")
             raise
 
+    async def handle_websocket(self, websocket: WebSocket):
+        """Handle WebSocket connection for MCP communication."""
+        try:
+            await websocket.accept()
+            self.connected_clients.add(websocket)
+            logger.debug("WebSocket connection accepted")
+            
+            # Wait for initialization message
+            init_message = await websocket.receive_text()
+            init_data = json.loads(init_message)
+            
+            if init_data["type"] != "initialize":
+                raise ValueError("Invalid initialization message")
+            
+            # Send initialization response
+            await websocket.send_text(json.dumps({
+                "type": "initialized",
+                "server_name": "finbuddy-llm",
+                "server_version": "1.0.0",
+                "capabilities": {
+                    "prompts": {"enabled": True},
+                    "resources": {"enabled": True},
+                    "tools": {"enabled": True},
+                    "logging": {"enabled": True},
+                    "completion": {"enabled": True}
+                }
+            }))
+            
+            # Handle messages
+            while True:
+                try:
+                    message = await websocket.receive_text()
+                    data = json.loads(message)
+                    
+                    if data["type"] == "register_tools":
+                        # Acknowledge tool registration
+                        await websocket.send_text(json.dumps({
+                            "type": "tool_result",
+                            "result": {"status": "success"}
+                        }))
+                    elif data["type"] == "call_tool":
+                        result = await self.handle_tool_call(data)
+                        await websocket.send_text(json.dumps({
+                            "type": "tool_result",
+                            "result": result
+                        }))
+                except WebSocketDisconnect:
+                    logger.debug("Client disconnected")
+                    break
+                except Exception as e:
+                    logger.error(f"Error handling message: {str(e)}")
+                    await websocket.send_text(json.dumps({
+                        "type": "error",
+                        "message": str(e)
+                    }))
+        except Exception as e:
+            logger.error(f"WebSocket error: {str(e)}")
+        finally:
+            self.connected_clients.discard(websocket)
+            await websocket.close()
+
+    async def handle_tool_call(self, message: Dict[str, Any]) -> Any:
+        """Handle tool calls from the client."""
+        tool_name = message.get("name")
+        arguments = message.get("arguments", {})
+        
+        if tool_name == "query_database":
+            return await self.query_database(arguments.get("query", ""))
+        elif tool_name == "update_database":
+            return await self.update_database(arguments.get("query", ""))
+        else:
+            raise ValueError(f"Unknown tool: {tool_name}")
+
     async def query_database(self, query: str) -> str:
         """Query the database with a SQL query."""
         try:
@@ -98,63 +171,5 @@ class MCPLLMServer(Server):
             logger.error(f"Error updating database: {str(e)}")
             raise
 
-    async def list_tools(self) -> List[Tool]:
-        """List available tools."""
-        return self.tools
-
-    async def call_tool(self, name: str, arguments: Dict[str, Any]) -> Any:
-        """Call a tool by name with the given arguments."""
-        if name == "query_database":
-            return await self.query_database(arguments["query"])
-        elif name == "update_database":
-            return await self.update_database(arguments["query"])
-        else:
-            raise ValueError(f"Unknown tool: {name}")
-
 # Create server instance
-mcp_server = MCPLLMServer()
-
-async def run_server():
-    """Run the MCP server."""
-    logger.debug("Starting MCP server")
-    try:
-        async with stdio_server() as (read, write):
-            await mcp_server.run(
-                read,
-                write,
-                InitializationOptions(
-                    server_name="finbuddy-llm",
-                    server_version="1.0.0",
-                    capabilities={
-                        "prompts": {"enabled": True},
-                        "resources": {"enabled": True},
-                        "tools": {"enabled": True},
-                        "logging": {"enabled": True},
-                        "completion": {"enabled": True}
-                    }
-                )
-            )
-    except Exception as e:
-        logger.error(f"Error in MCP server main: {str(e)}", exc_info=True)
-        raise
-
-if __name__ == "__main__":
-    try:
-        # Create a new event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        # Set up proper signal handling
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, lambda: loop.stop())
-        
-        # Run the server
-        loop.run_until_complete(run_server())
-    except KeyboardInterrupt:
-        logger.info("MCP server shutting down gracefully")
-    except Exception as e:
-        logger.error(f"Fatal error in MCP server: {str(e)}", exc_info=True)
-        raise
-    finally:
-        # Clean up the event loop
-        loop.close() 
+mcp_server = MCPLLMServer() 
