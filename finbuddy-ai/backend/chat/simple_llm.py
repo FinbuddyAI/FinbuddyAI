@@ -32,8 +32,20 @@ class SimpleLLM:
         self.model = os.getenv("OPENAI_MODEL", "gpt-4")
         self.temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
         
+        # Fallback to config_list.json if OPENAI_API_KEY is missing
         if not self.api_key:
-            raise ValueError("OPENAI_API_KEY environment variable is required")
+            logger.warning("Environment variable OPENAI_API_KEY not found, falling back to config_list.json")
+            config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config_list.json')
+            try:
+                with open(config_path, 'r') as f:
+                    configs = json.load(f)
+                cfg = configs[0]
+                self.api_key = cfg.get("api_key")
+                self.base_url = cfg.get("base_url", self.base_url)
+                self.model = cfg.get("model", self.model)
+            except Exception as e:
+                logger.error(f"Failed to load config_list.json: {e}")
+                raise ValueError("OPENAI_API_KEY environment variable required and fallback failed") from e
         
         # Initialize conversation history
         self.conversation_history = []

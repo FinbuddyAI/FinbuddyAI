@@ -30,10 +30,22 @@ class MCPLLMServer(Server):
             model = os.getenv("OPENAI_MODEL", "gpt-4")
             temperature = float(os.getenv("OPENAI_TEMPERATURE", "0.7"))
             
+            # Fallback to config_list.json if env vars are missing
             if not api_key or not base_url:
-                raise ValueError("Missing required environment variables: OPENAI_API_KEY and OPENAI_BASE_URL")
+                logger.warning("Environment variables for OpenAI not found, falling back to config_list.json")
+                config_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config_list.json')
+                try:
+                    with open(config_path, 'r') as f:
+                        configs = json.load(f)
+                    cfg = configs[0]
+                    api_key = cfg.get("api_key")
+                    base_url = cfg.get("base_url")
+                    model = cfg.get("model", model)
+                except Exception as e:
+                    logger.error(f"Failed to load config_list.json: {e}")
+                    raise ValueError("Missing OpenAI configuration and failed to load config_list.json") from e
             
-            logger.debug("Using OpenAI configuration from environment variables")
+            logger.debug(f"Using OpenAI configuration: model={model}, base_url={base_url}")
             self.client = OpenAI(
                 api_key=api_key,
                 base_url=base_url
