@@ -225,7 +225,13 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
     4. Providing clear explanations for each adjustment
     
     Return adjusted goals and explanations in JSON format with these fields:
-    - adjusted_goals: List of adjusted goals, each with category, target_amount, period, description
+    - adjusted_goals: List of adjusted goals, each with:
+        - goal_id: The unique identifier of the goal
+        - goal_type: Either "spending" or "saving"
+        - category: The goal category
+        - target_amount: The new target amount
+        - period: The goal period (e.g., "monthly")
+        - description: Explanation of the adjustment
     - adjustments: Explanation for each category adjustment
     - summary: Overall adjustment explanation
     - recommendations: Suggestions based on adjustments
