@@ -14,6 +14,15 @@ from decimal import Decimal, getcontext
 # Set decimal precision
 getcontext().prec = 10
 
+# Configure logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+
 logger = logging.getLogger(__name__)
 
 class OnboardingAgent:
@@ -166,38 +175,7 @@ class OnboardingAgent:
             content = msg.get("content", "").strip()
             return "TERMINATE" in content
 
-        # Financial Analyst Agent
-        self.financial_analyst = autogen.AssistantAgent(
-            name="Financial_Analyst",
-            system_message=f"""You are a financial analyst specializing in personal finance data analysis.
-            Today's date is {current_date}.
-            
-            Your role is to analyze the user's transaction data and provide insights to the Financial Advisor.
-            
-            You have access to the user's complete transaction history. Analyze this data to:
-            1. Calculate key financial metrics:
-               - Average monthly expenses
-               - Spending patterns by category
-               - Current saving rate
-               - Top expense categories
-               - Monthly spending trends
-            
-            2. Identify potential areas for improvement:
-               - Categories with highest spending
-               - Unusual spending patterns
-               - Opportunities for cost reduction
-            
-            3. Format your analysis in a clear, structured way that the Financial Advisor can use to:
-               - Understand the user's current financial situation
-               - Make informed recommendations
-               - Set realistic goals
-            
-            Provide your analysis in a concise, professional format that focuses on actionable insights.
-            Use plain text only - no markdown formatting.
-            """,
-            llm_config=self.llm_config
-        )
-
+        
         # Financial Advisor Agent
         self.financial_advisor = autogen.AssistantAgent(
             name="Financial_Advisor",
@@ -343,19 +321,23 @@ class OnboardingAgent:
                 account_id,
                 name,
                 available_balance,
-                current_balance,
                 currency_code
             FROM bank_accounts 
             WHERE user_id = %s
             """
             accounts_result = query_database(accounts_query, (self.user_id,))
             
+            # Log the raw account data
+            print(f"Raw bank account data for user {self.user_id}:")
+            for account in accounts_result:
+                print(f"Account: {account['name']}")
+                print(f"  Available Balance: {account['available_balance']}")
+                print(f"  Currency: {account['currency_code']}")
+            
             # Calculate total available balance
             total_available = Decimal('0')
-            total_current = Decimal('0')
             for account in accounts_result:
                 total_available += Decimal(str(account['available_balance']))
-                total_current += Decimal(str(account['current_balance']))
 
             # Get transactions for the last 30 days
             transactions_query = """
@@ -381,54 +363,50 @@ class OnboardingAgent:
                 if row['category'] == 'Income':
                     total_income = Decimal(str(row['total_income']))
                 else:
-                    amount = Decimal(str(row['category_amount']))
+                    # Ensure spending amounts are positive
+                    amount = abs(Decimal(str(row['category_amount'])))
                     category_spending[row['category']] = amount
                     total_spending += amount
 
-            # Calculate actual money left (available balance - spending)
-            actual_money_left = total_available - total_spending
-
-            logger.debug(f"Financial summary for user {self.user_id}:")
-            logger.debug(f"Total available balance: {total_available}")
-            logger.debug(f"Total current balance: {total_current}")
-            logger.debug(f"Total income (30 days): {total_income}")
-            logger.debug(f"Total spending (30 days): {total_spending}")
-            logger.debug(f"Category spending: {category_spending}")
+            print(f"Financial summary for user {self.user_id}:")
+            print(f"Total available balance: {total_available}")
+            print(f"Total income (30 days): {total_income}")
+            print(f"Total spending (30 days): {total_spending}")
+            print(f"Category spending: {category_spending}")
 
             return {
                 'current_savings': float(total_available),
-                'current_balance': float(total_current),
                 'current_spending': float(total_spending),
                 'current_income': float(total_income),
-                'actual_money_left': float(actual_money_left),
                 'category_spending': {k: float(v) for k, v in category_spending.items()}
             }
         except Exception as e:
-            logger.error(f"Failed to get financial summary: {e}")
+            print(f"Failed to get financial summary: {e}")
             return {}
 
     def start_conversation(self) -> str:
         """Start the onboarding conversation and return the initial message, logging user data."""
         # Log user data
-        logger.debug(f"Starting conversation for user {self.user_id} with data: {self.expense_data}")
+        print(f"Starting conversation for user {self.user_id} with data: {self.expense_data}")
         
         # Get financial summary
         financial_summary = self._get_financial_summary()
+        print(f"Generated financial summary: {financial_summary}")
         
         # Create the initial message with financial summary
         initial_message = f"""Hello! I'm your personal financial advisor. I've analyzed your current financial situation:
 
 Current Financial Summary:
 - Available Balance: ${financial_summary.get('current_savings', 0):,.2f}
-- Current Balance: ${financial_summary.get('current_balance', 0):,.2f}
 - Income (Last 30 Days): ${financial_summary.get('current_income', 0):,.2f}
 - Spending (Last 30 Days): ${financial_summary.get('current_spending', 0):,.2f}
-- Actual Money Left: ${financial_summary.get('actual_money_left', 0):,.2f}
 
 Spending by Category (Last 30 Days):
 {chr(10).join([f"- {category}: ${amount:,.2f}" for category, amount in financial_summary.get('category_spending', {}).items()])}
 
 Based on this analysis, I'd like to help you set and achieve your financial goals. Could you tell me about your main financial goals and what you hope to achieve?"""
+
+        print(f"Generated initial message: {initial_message}")
 
         # Start the conversation with the financial advisor
         self.financial_advisor.initiate_chat(
