@@ -791,12 +791,32 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
         df = pd.DataFrame(transactions)
         df['transaction_date'] = pd.to_datetime(df['date'])
         
-        # Get current goals
+        # Get current goals from both tables
         cur.execute("""
-            SELECT * FROM goals 
-            WHERE user_id = %s 
-            AND status = 'active'
-        """, (current_user.id,))
+            SELECT 
+                'spending' as goal_type,
+                goal_id,
+                category,
+                target_amount,
+                current_amount,
+                created_at,
+                last_adjusted_at
+            FROM spending_goals 
+            WHERE user_id = %s
+            
+            UNION ALL
+            
+            SELECT 
+                'saving' as goal_type,
+                goal_id,
+                category,
+                target_amount,
+                current_amount,
+                created_at,
+                last_adjusted_at
+            FROM saving_goals 
+            WHERE user_id = %s
+        """, (current_user.id, current_user.id))
         
         goals = cur.fetchall()
         
@@ -827,29 +847,40 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
             goals_df
         )
         
-        # Save adjustment to history
-        adjustment_id = goal_history_tracker.save_adjustment(
-            goals_df,
-            adjusted_goals,
-            adjustment_result,
-            trigger_event=", ".join(trigger_reasons)
-        )
+        # Format adjustment report
+        report = format_adjustment_report(adjustment_result)
         
-        # Update goals in database
+        # Save report to file
+        report_dir = os.path.join(os.path.dirname(__file__), "goal_reports")
+        os.makedirs(report_dir, exist_ok=True)
+        report_file = os.path.join(report_dir, f"adjustment_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md")
+        with open(report_file, 'w') as f:
+            f.write(report)
+        
+        # Update goals in database based on type
         for _, goal in adjusted_goals.iterrows():
-            cur.execute("""
-                UPDATE goals 
-                SET target_amount = %s,
-                    updated_at = NOW()
-                WHERE id = %s AND user_id = %s
-            """, (goal['target_amount'], goal['id'], current_user.id))
+            if goal['goal_type'] == 'spending':
+                cur.execute("""
+                    UPDATE spending_goals 
+                    SET target_amount = %s,
+                        last_adjusted_at = NOW()
+                    WHERE goal_id = %s AND user_id = %s
+                """, (goal['target_amount'], goal['goal_id'], current_user.id))
+            else:  # saving goal
+                cur.execute("""
+                    UPDATE saving_goals 
+                    SET target_amount = %s,
+                        last_adjusted_at = NOW()
+                    WHERE goal_id = %s AND user_id = %s
+                """, (goal['target_amount'], goal['goal_id'], current_user.id))
         
         conn.commit()
         
         return {
-            "adjustment_id": adjustment_id,
+            "message": "Goals adjusted successfully",
+            "report_file": report_file,
             "adjusted_goals": adjusted_goals.to_dict('records'),
-            "adjustment_result": adjustment_result
+            "adjustment_summary": adjustment_result.get('summary', '')
         }
         
     except Exception as e:
