@@ -979,6 +979,57 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
                 json.dump(report_data, f, indent=2)
             print(f"Debug - Saved adjustment report to {report_path}")
             
+            # Send report to Slack
+            try:
+                from slack_bot.send import send_slack_message
+                
+                # Format the message
+                message = f"🎯 *Goal Adjustment Report*\n"
+                message += f"User ID: {current_user['id']}\n"
+                message += f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+                
+                if unusual_transactions:
+                    message += "*Unusual Transactions:*\n"
+                    for tx in unusual_transactions:
+                        message += f"- {tx['name']}: ¥{abs(tx['amount']):.2f} ({tx['category']})\n"
+                    message += "\n"
+                
+                if additional_income:
+                    message += f"*Additional Income:* ¥{total_additional_income:.2f}\n\n"
+                
+                message += "*Goal Adjustments:*\n"
+                for goal in adjusted_goals_df.to_dict('records'):
+                    message += f"- {goal['category']}: ¥{goal['target_amount']:.2f}\n"
+                message += "\n"
+                
+                # Add adjustment summary
+                message += "*Adjustment Summary:*\n"
+                message += f"{adjustment_result.get('summary', 'No summary available')}\n\n"
+                
+                # Add detailed adjustments
+                message += "*Detailed Adjustments:*\n"
+                adjustments = adjustment_result.get('adjustments', {})
+                for category, explanation in adjustments.items():
+                    message += f"- {category}: {explanation}\n"
+                message += "\n"
+                
+                # Add recommendations
+                message += "*Recommendations:*\n"
+                message += f"{adjustment_result.get('recommendations', 'No recommendations available')}\n"
+                
+                # Send to Slack
+                webhook_url = "https://hooks.slack.com/services/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"
+                send_slack_message(
+                    webhook_url=webhook_url,
+                    message=message,
+                    channel="#goal-adjustments",
+                    username="FinBuddy AI",
+                    icon_emoji=":robot_face:"
+                )
+                print("Debug - Sent adjustment report to Slack")
+            except Exception as e:
+                print(f"Debug - Failed to send Slack notification: {str(e)}")
+            
             return {
                 "unusual_transactions": unusual_transactions,
                 "additional_income": additional_income,
