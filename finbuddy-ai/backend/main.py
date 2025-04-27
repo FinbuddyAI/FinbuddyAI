@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, WebSocket
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
@@ -18,7 +18,7 @@ from chat.routes import router as chat_router
 from auth import get_current_user, get_token_from_header, security, SECRET_KEY, ALGORITHM
 from goal_refine.goal_adjuster import detect_unusual_transactions, detect_additional_income, adjust_goals
 from goal_refine.goal_history_tracker import GoalHistoryTracker
-from chat.mcp_server import mcp_server
+import json
 
 # Add the onboarding directory to the Python path
 onboarding_path = str(Path(__file__).parent.parent / "onboarding")
@@ -36,21 +36,16 @@ app = FastAPI()
 onboarding_router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 goal_refine_router = APIRouter(prefix="/goals", tags=["goals"])
 
-# Initialize the onboarding agent
-config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
-onboarding_agent = OnboardingAgent(user_id=1, config_path=config_path)
-onboarding_agent.create_agents()
-
 # Initialize goal history tracker
 goal_history_tracker = GoalHistoryTracker()
 
-# Configure CORS
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Database connection
@@ -144,6 +139,37 @@ def init_db():
                 category VARCHAR(50) NOT NULL,
                 user_id INTEGER REFERENCES users(id),
                 created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create goals table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS goals (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                category VARCHAR(50) NOT NULL,
+                target_amount DECIMAL(10,2) NOT NULL,
+                current_amount DECIMAL(10,2) DEFAULT 0,
+                period VARCHAR(20) NOT NULL,
+                description TEXT,
+                type VARCHAR(20) NOT NULL CHECK (type IN ('spending', 'saving')),
+                active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create goal_adjustments table
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS goal_adjustments (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER REFERENCES users(id),
+                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                trigger_event TEXT,
+                original_goals JSONB,
+                adjusted_goals JSONB,
+                adjustment_details JSONB,
+                cancelled BOOLEAN DEFAULT false
             )
         """)
         
@@ -515,14 +541,14 @@ async def root():
 # Onboarding routes
 @onboarding_router.post("/start")
 async def start_onboarding(token: str = Depends(get_token_from_header)):
-    """Start a new onboarding session and return the initial message from the financial advisor."""
+    """
+    Start a new onboarding session and return the initial message from the financial advisor.
+    """
     try:
-        # Get current user
         current_user = await get_current_user(token)
-        print(f"Debug - Starting onboarding for user: {current_user}")  # Debug log
-        
-        # Update onboarding agent with current user's ID
-        onboarding_agent.user_id = current_user['id']
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
+        onboarding_agent = OnboardingAgent(user_id=current_user['id'], config_path=config_path)
+        onboarding_agent.create_agents()
         
         # Start the conversation and get the initial message
         initial_message = onboarding_agent.start_conversation()
@@ -537,6 +563,11 @@ async def send_message(message: OnboardingMessage, token: str = Depends(get_toke
     Send a message to the financial advisor and get the response.
     """
     try:
+        current_user = await get_current_user(token)
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
+        onboarding_agent = OnboardingAgent(user_id=current_user['id'], config_path=config_path)
+        onboarding_agent.create_agents()
+        
         # Send the message and get the response
         response_message, is_complete, profile = onboarding_agent.send_message(message.content)
         
@@ -561,6 +592,11 @@ async def get_onboarding_goals(token: str = Depends(get_token_from_header)):
     Get the list of onboarding goals that need to be completed.
     """
     try:
+        current_user = await get_current_user(token)
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
+        onboarding_agent = OnboardingAgent(user_id=current_user['id'], config_path=config_path)
+        onboarding_agent.create_agents()
+        
         goals = onboarding_agent.get_onboarding_goals()
         return {"goals": goals}
     except Exception as e:
@@ -767,128 +803,210 @@ async def detect_unusual_activity(token: str = Depends(get_token_from_header)):
 
 @goal_refine_router.post("/adjust")
 async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
-    """Adjust goals based on recent transactions"""
+    """Adjust spending goals based on recent transactions"""
     current_user = await get_current_user(token)
+    print(f"Debug - Starting goal adjustment for user: {current_user['id']}")
     
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor)
     
     try:
         # Get recent transactions
+        print("Debug - Fetching recent transactions...")
         cur.execute("""
-            SELECT * FROM transactions 
+            SELECT transaction_id, date, amount::float, category, name
+            FROM transactions 
             WHERE user_id = %s 
-            AND date >= NOW() - INTERVAL '30 days'
+            AND date >= CURRENT_DATE - INTERVAL '30 days'
             ORDER BY date DESC
-        """, (current_user.id,))
+        """, (current_user['id'],))
         
         transactions = cur.fetchall()
-        
+        print(f"Debug - Found {len(transactions)} transactions")
         if not transactions:
-            raise HTTPException(status_code=400, detail="No recent transactions found")
+            raise HTTPException(status_code=404, detail="No recent transactions found")
         
-        # Convert to DataFrame
-        df = pd.DataFrame(transactions)
-        df['transaction_date'] = pd.to_datetime(df['date'])
+        # Convert to DataFrame and rename date column
+        print("Debug - Converting transactions to DataFrame...")
+        transactions_df = pd.DataFrame(transactions, columns=['transaction_id', 'date', 'amount', 'category', 'name'])
+        transactions_df = transactions_df.rename(columns={'date': 'transaction_date'})
+        print(f"Debug - Transaction DataFrame columns: {transactions_df.columns.tolist()}")
+        print(f"Debug - Transaction DataFrame sample: {transactions_df.head()}")
         
-        # Get current goals from both tables
+        # Ensure transaction_date is datetime type and amount is float
+        transactions_df['transaction_date'] = pd.to_datetime(transactions_df['transaction_date'])
+        transactions_df['amount'] = transactions_df['amount'].astype(float)
+        
+        # Get current spending goals
+        print("Debug - Fetching current spending goals...")
         cur.execute("""
-            SELECT 
-                'spending' as goal_type,
-                goal_id,
-                category,
-                target_amount,
-                current_amount,
-                created_at,
-                last_adjusted_at
+            SELECT goal_id, category, target_amount::float, current_amount::float
             FROM spending_goals 
             WHERE user_id = %s
-            
-            UNION ALL
-            
-            SELECT 
-                'saving' as goal_type,
-                goal_id,
-                category,
-                target_amount,
-                current_amount,
-                created_at,
-                last_adjusted_at
-            FROM saving_goals 
-            WHERE user_id = %s
-        """, (current_user.id, current_user.id))
+        """, (current_user['id'],))
         
         goals = cur.fetchall()
-        
+        print(f"Debug - Found {len(goals)} goals")
+        print(f"Debug - Goals data: {goals}")
         if not goals:
-            raise HTTPException(status_code=400, detail="No active goals found")
+            raise HTTPException(status_code=404, detail="No spending goals found")
         
-        # Convert to DataFrame
-        goals_df = pd.DataFrame(goals)
+        # Convert to DataFrame with proper column mapping
+        print("Debug - Converting goals to DataFrame...")
+        goals_df = pd.DataFrame(goals, columns=['goal_id', 'category', 'target_amount', 'current_amount'])
+        print(f"Debug - Goals DataFrame columns: {goals_df.columns.tolist()}")
+        print(f"Debug - Goals DataFrame sample: {goals_df.head()}")
         
-        # Detect unusual transactions and additional income
-        unusual_transactions = detect_unusual_transactions(df)
-        additional_income, _ = detect_additional_income(df)
+        # Ensure amounts are float and goal_id is string
+        goals_df['target_amount'] = goals_df['target_amount'].astype(float)
+        goals_df['current_amount'] = goals_df['current_amount'].astype(float)
+        goals_df['goal_id'] = goals_df['goal_id'].astype(str)
+        
+        # Detect unusual transactions
+        print("Debug - Detecting unusual transactions...")
+        try:
+            unusual_transactions = detect_unusual_transactions(transactions_df)
+            additional_income, total_additional_income = detect_additional_income(transactions_df)
+            print(f"Debug - Found {len(unusual_transactions)} unusual transactions")
+            print(f"Debug - Found {len(additional_income)} additional income entries")
+        except Exception as e:
+            print(f"Debug - Error in detection: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+        
+        # If no significant changes detected, return early
+        if not unusual_transactions and not additional_income:
+            print("Debug - No significant changes detected")
+            return {
+                "message": "No significant changes detected. Goals remain unchanged.",
+                "unusual_transactions": [],
+                "additional_income": [],
+                "total_additional_income": 0,
+                "adjusted_goals": goals_df.to_dict('records')
+            }
         
         # Prepare trigger reasons
-        trigger_reasons = []
-        if unusual_transactions:
-            trigger_reasons.append("Unusual transactions detected")
-        if additional_income:
-            trigger_reasons.append("Additional income detected")
-        
-        if not trigger_reasons:
-            return {"message": "No significant changes detected to warrant goal adjustment"}
+        print("Debug - Preparing trigger reasons...")
+        trigger_reasons = {
+            "unusual_transactions": unusual_transactions,
+            "additional_income": additional_income
+        }
         
         # Adjust goals
-        adjusted_goals, adjustment_result = adjust_goals(
-            df,
-            trigger_reasons,
-            goals_df
-        )
-        
-        # Format adjustment report
-        report = format_adjustment_report(adjustment_result)
-        
-        # Save report to file
-        report_dir = os.path.join(os.path.dirname(__file__), "goal_reports")
-        os.makedirs(report_dir, exist_ok=True)
-        report_file = os.path.join(report_dir, f"adjustment_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md")
-        with open(report_file, 'w') as f:
-            f.write(report)
-        
-        # Update goals in database based on type
-        for _, goal in adjusted_goals.iterrows():
-            if goal['goal_type'] == 'spending':
+        print("Debug - Starting goal adjustment...")
+        try:
+            adjusted_goals_df, adjustment_result = adjust_goals(transactions_df, trigger_reasons, goals_df)
+            print(f"Debug - Adjusted goals DataFrame: {adjusted_goals_df}")
+            print(f"Debug - Adjustment result: {adjustment_result}")
+            
+            # Map numeric goal IDs back to original string IDs
+            goal_id_map = {
+                1: 'sg_001',
+                2: 'sg_002',
+                3: 'sg_003',
+                4: 'sg_004'
+            }
+            
+            # Update goal IDs in the DataFrame
+            adjusted_goals_df['goal_id'] = adjusted_goals_df['goal_id'].map(goal_id_map)
+            
+            # Ensure all numeric columns are float
+            adjusted_goals_df['target_amount'] = adjusted_goals_df['target_amount'].astype(float)
+            
+            print(f"Debug - Adjusted goals DataFrame: {adjusted_goals_df}")
+            
+            # Update spending goals in database
+            print("Debug - Updating goals in database...")
+            for _, goal in adjusted_goals_df.iterrows():
+                print(f"Debug - Updating goal: {goal}")
                 cur.execute("""
                     UPDATE spending_goals 
                     SET target_amount = %s,
-                        last_adjusted_at = NOW()
+                        last_adjusted_at = CURRENT_TIMESTAMP
                     WHERE goal_id = %s AND user_id = %s
-                """, (goal['target_amount'], goal['goal_id'], current_user.id))
-            else:  # saving goal
-                cur.execute("""
-                    UPDATE saving_goals 
-                    SET target_amount = %s,
-                        last_adjusted_at = NOW()
-                    WHERE goal_id = %s AND user_id = %s
-                """, (goal['target_amount'], goal['goal_id'], current_user.id))
-        
-        conn.commit()
-        
-        return {
-            "message": "Goals adjusted successfully",
-            "report_file": report_file,
-            "adjusted_goals": adjusted_goals.to_dict('records'),
-            "adjustment_summary": adjustment_result.get('summary', '')
-        }
-        
+                """, (float(goal['target_amount']), str(goal['goal_id']), current_user['id']))
+            
+            conn.commit()
+            print("Debug - Database update successful")
+            
+            # Save adjustment report
+            report_dir = Path("goal_reports")
+            report_dir.mkdir(exist_ok=True)
+            
+            # Create a timestamp for the report filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            report_filename = f"adjustment_report_{current_user['id']}_{timestamp}.json"
+            report_path = report_dir / report_filename
+            
+            # Convert DataFrames to dictionaries and handle timestamps
+            original_goals_dict = goals_df.to_dict('records')
+            adjusted_goals_dict = adjusted_goals_df.to_dict('records')
+            
+            # Convert any datetime objects to strings
+            for goal in original_goals_dict:
+                for key, value in goal.items():
+                    if isinstance(value, (pd.Timestamp, datetime)):
+                        goal[key] = value.isoformat()
+            
+            for goal in adjusted_goals_dict:
+                for key, value in goal.items():
+                    if isinstance(value, (pd.Timestamp, datetime)):
+                        goal[key] = value.isoformat()
+            
+            # Prepare report data
+            report_data = {
+                "user_id": current_user['id'],
+                "timestamp": datetime.now().isoformat(),
+                "unusual_transactions": [
+                    {k: v.isoformat() if isinstance(v, (pd.Timestamp, datetime)) else v 
+                     for k, v in tx.items()} 
+                    for tx in unusual_transactions
+                ],
+                "additional_income": [
+                    {k: v.isoformat() if isinstance(v, (pd.Timestamp, datetime)) else v 
+                     for k, v in tx.items()} 
+                    for tx in additional_income
+                ],
+                "total_additional_income": total_additional_income,
+                "original_goals": original_goals_dict,
+                "adjusted_goals": adjusted_goals_dict,
+                "adjustment_summary": adjustment_result.get('summary', ''),
+                "adjustments": adjustment_result.get('adjustments', {}),
+                "recommendations": adjustment_result.get('recommendations', '')
+            }
+            
+            # Save report to file
+            with open(report_path, 'w') as f:
+                json.dump(report_data, f, indent=2)
+            print(f"Debug - Saved adjustment report to {report_path}")
+            
+            return {
+                "unusual_transactions": unusual_transactions,
+                "additional_income": additional_income,
+                "total_additional_income": total_additional_income,
+                "adjusted_goals": adjusted_goals_df.to_dict('records'),
+                "adjustment_summary": adjustment_result.get('summary', ''),
+                "report_path": str(report_path)
+            }
+            
+        except Exception as e:
+            print(f"Debug - Error in goal adjustment: {str(e)}")
+            raise HTTPException(status_code=500, detail=str(e))
+            
+    except HTTPException as he:
+        conn.rollback()
+        print(f"Debug - HTTP Exception: {str(he)}")
+        raise he
     except Exception as e:
         conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Debug - Unexpected error: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Failed to adjust goals: {str(e)}"
+        )
     finally:
         cur.close()
         conn.close()
+        print("Debug - Database connection closed")
 
 @goal_refine_router.get("/history")
 async def get_goal_history(token: str = Depends(get_token_from_header)):
@@ -896,8 +1014,8 @@ async def get_goal_history(token: str = Depends(get_token_from_header)):
     current_user = await get_current_user(token)
     
     try:
-        # Get adjustment history
-        history = goal_history_tracker.get_adjustment_summary()
+        # Get adjustment history for the current user
+        history = goal_history_tracker.get_adjustment_summary(user_id=current_user['id'])
         
         return {
             "history": history
@@ -965,13 +1083,4 @@ async def detect_anomalies(token: str = Depends(get_token_from_header)):
         raise he
     except Exception as e:
         print(f"Debug - Unexpected error: {str(e)}")  # Debug log
-        raise HTTPException(status_code=500, detail=str(e))
-
-# Add MCP WebSocket endpoint
-@app.websocket("/ws/mcp")
-async def websocket_endpoint(websocket: WebSocket):
-    await mcp_server.handle_websocket(websocket)
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+        raise HTTPException(status_code=500, detail=str(e)) 

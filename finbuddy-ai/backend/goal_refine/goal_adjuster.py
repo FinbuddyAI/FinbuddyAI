@@ -10,18 +10,10 @@ import re
 
 def setup_llm_config():
     """Configure LLM settings"""
-    config_path = os.path.join(os.path.dirname(__file__), "config_list.json")
-    env_path = os.path.join(os.path.dirname(__file__), ".env")
-
-    if os.path.exists(config_path):
-        with open(config_path, "r") as f:
-            config_list = json.load(f)
-        return {
-            "config_list": config_list,
-            "temperature": 0.5,
-            "timeout": 120,
-        }
-    elif os.path.exists(env_path):
+    # Look for .env file in the backend directory
+    env_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    
+    if os.path.exists(env_path):
         from dotenv import load_dotenv
         load_dotenv(dotenv_path=env_path)
         api_key = os.getenv("OPENAI_API_KEY")
@@ -30,16 +22,16 @@ def setup_llm_config():
         return {
             "config_list": [
                 {
-                    "model": os.getenv("MODEL_INDEX", "gpt-4o-mini"),
+                    "model": os.getenv("OPENAI_MODEL", "gpt-4"),
                     "api_key": api_key,
-                    "base_url": os.getenv("BASE_URL", "https://api.openai.com/v1"),
+                    "base_url": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
                 }
             ],
-            "temperature": 0.5,
+            "temperature": float(os.getenv("OPENAI_TEMPERATURE", "0.7")),
             "timeout": 120,
         }
     else:
-        raise FileNotFoundError("❌ No config_list.json or .env found. Provide at least one to configure the LLM.")
+        raise FileNotFoundError("❌ No .env file found in the backend directory. Please create one with OpenAI configuration.")
 
 def create_goal_adjustment_agent():
     """Create goal adjustment agent"""
@@ -331,7 +323,10 @@ def prepare_goals_data(goals_df):
     
     goals_text = ""
     for _, goal in goals_df.iterrows():
-        goals_text += f"- Category: {goal['category']}, Target: ¥{goal['target_amount']:.2f} ({goal['period']}), Description: {goal['description']}\n"
+        # Add default period if not present
+        period = goal.get('period', 'monthly')
+        description = goal.get('description', '')
+        goals_text += f"- Category: {goal['category']}, Target: ¥{goal['target_amount']:.2f} ({period}), Description: {description}\n"
     
     return goals_text
 

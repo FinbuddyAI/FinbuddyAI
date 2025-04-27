@@ -45,7 +45,7 @@ def test_transactions_and_anomalies():
         print("\nCreating unusual large expense...")
         create_test_transaction(
             headers=headers,
-            amount=-1000.00,  # Large expense
+            amount=-2000.00,  # Large expense
             category="shopping",
             name="Luxury Purchase"
         )
