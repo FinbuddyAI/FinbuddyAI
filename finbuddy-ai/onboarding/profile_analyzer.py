@@ -4,6 +4,7 @@ from openai import OpenAI
 from typing import List, Dict, Any
 from datetime import datetime
 from dotenv import load_dotenv
+import pandas as pd
 
 
 class ProfileAnalyzer:
@@ -151,3 +152,21 @@ Conversation History:
             json.dump(user_profile, f, indent=2)
         
         return filepath
+
+    def analyze_financial_data(self, user_profile: Dict[str, Any], expense_data: pd.DataFrame) -> Dict[str, Any]:
+        """Analyze financial data and provide insights on spending and saving goals."""
+        # Analyze expenses
+        total_expenses = expense_data['amount'].sum()
+        monthly_expense = expense_data.groupby(expense_data['transaction_date'].dt.to_period('M'))['amount'].sum().mean()
+        top_categories = expense_data.groupby('category')['amount'].sum().nlargest(3).to_dict()
+
+        # Provide insights
+        insights = {
+            'total_expenses': total_expenses,
+            'average_monthly_expense': monthly_expense,
+            'top_categories': top_categories,
+            'advice': "To achieve your saving goals, consider reducing spending in top categories."
+        }
+
+        user_profile['financial_insights'] = insights
+        return user_profile

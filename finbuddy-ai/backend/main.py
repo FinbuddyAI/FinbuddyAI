@@ -38,7 +38,7 @@ goal_refine_router = APIRouter(prefix="/goals", tags=["goals"])
 
 # Initialize the onboarding agent
 config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
-onboarding_agent = OnboardingAgent(config_path=config_path)
+onboarding_agent = OnboardingAgent(user_id=1, config_path=config_path)
 onboarding_agent.create_agents()
 
 # Initialize goal history tracker
@@ -515,10 +515,15 @@ async def root():
 # Onboarding routes
 @onboarding_router.post("/start")
 async def start_onboarding(token: str = Depends(get_token_from_header)):
-    """
-    Start a new onboarding session and return the initial message from the financial advisor.
-    """
+    """Start a new onboarding session and return the initial message from the financial advisor."""
     try:
+        # Get current user
+        current_user = await get_current_user(token)
+        print(f"Debug - Starting onboarding for user: {current_user}")  # Debug log
+        
+        # Update onboarding agent with current user's ID
+        onboarding_agent.user_id = current_user['id']
+        
         # Start the conversation and get the initial message
         initial_message = onboarding_agent.start_conversation()
         return {"message": initial_message}

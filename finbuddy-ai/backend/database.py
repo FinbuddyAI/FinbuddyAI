@@ -101,3 +101,30 @@ def init_db():
     finally:
         cur.close()
         conn.close() 
+
+def query_database(query: str, params: tuple = None) -> list:
+    """
+    Execute a database query and return the results.
+    
+    Args:
+        query (str): The SQL query to execute
+        params (tuple, optional): Parameters for the query
+        
+    Returns:
+        list: List of dictionaries containing the query results
+    """
+    conn = psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
+    cur = conn.cursor()
+    try:
+        if params:
+            cur.execute(query, params)
+        else:
+            cur.execute(query)
+        results = cur.fetchall()
+        return results
+    except Exception as e:
+        print(f"Error executing query: {str(e)}")
+        raise
+    finally:
+        cur.close()
+        conn.close() 
