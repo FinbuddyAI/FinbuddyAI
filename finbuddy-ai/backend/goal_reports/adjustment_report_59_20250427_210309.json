@@ -1,10 +1,10 @@
 {
-  "user_id": 42,
-  "timestamp": "2025-04-27T20:33:28.153377",
+  "user_id": 59,
+  "timestamp": "2025-04-27T21:03:09.577799",
   "unusual_transactions": [],
   "additional_income": [
     {
-      "transaction_id": 1,
+      "transaction_id": 0,
       "date": "2025-04-27T00:00:00",
       "category": "Income",
       "source": "Bonus",
@@ -54,17 +54,17 @@
     {
       "transaction_id": 9,
       "date": "2025-04-11T00:00:00",
-      "category": "Transportation",
-      "source": "Uber",
-      "amount": 33.89,
+      "category": "Food",
+      "source": "Restaurant",
+      "amount": 56.01,
       "description": ""
     },
     {
       "transaction_id": 10,
       "date": "2025-04-11T00:00:00",
-      "category": "Food",
-      "source": "Restaurant",
-      "amount": 56.01,
+      "category": "Transportation",
+      "source": "Uber",
+      "amount": 33.89,
       "description": ""
     },
     {
@@ -80,7 +80,7 @@
       "date": "2025-04-10T00:00:00",
       "category": "Food",
       "source": "Groceries",
-      "amount": 29.34,
+      "amount": 26.08,
       "description": ""
     },
     {
@@ -96,7 +96,7 @@
       "date": "2025-04-10T00:00:00",
       "category": "Food",
       "source": "Groceries",
-      "amount": 26.08,
+      "amount": 29.34,
       "description": ""
     },
     {
@@ -126,9 +126,9 @@
     {
       "transaction_id": 18,
       "date": "2025-04-07T00:00:00",
-      "category": "Transportation",
-      "source": "Gas Station",
-      "amount": 8.01,
+      "category": "Food",
+      "source": "Groceries",
+      "amount": 35.26,
       "description": ""
     },
     {
@@ -142,9 +142,9 @@
     {
       "transaction_id": 20,
       "date": "2025-04-07T00:00:00",
-      "category": "Food",
-      "source": "Groceries",
-      "amount": 35.26,
+      "category": "Transportation",
+      "source": "Gas Station",
+      "amount": 8.01,
       "description": ""
     },
     {
@@ -159,16 +159,16 @@
       "transaction_id": 22,
       "date": "2025-04-05T00:00:00",
       "category": "Food",
-      "source": "Restaurant",
-      "amount": 53.48,
+      "source": "Groceries",
+      "amount": 142.42,
       "description": ""
     },
     {
       "transaction_id": 23,
       "date": "2025-04-05T00:00:00",
-      "category": "Food",
-      "source": "Groceries",
-      "amount": 142.42,
+      "category": "Transportation",
+      "source": "Uber",
+      "amount": 31.98,
       "description": ""
     },
     {
@@ -182,25 +182,25 @@
     {
       "transaction_id": 25,
       "date": "2025-04-05T00:00:00",
-      "category": "Transportation",
-      "source": "Uber",
-      "amount": 31.98,
+      "category": "Food",
+      "source": "Restaurant",
+      "amount": 53.48,
       "description": ""
     },
     {
       "transaction_id": 26,
       "date": "2025-04-04T00:00:00",
-      "category": "Transportation",
-      "source": "Bus Ticket",
-      "amount": 4.24,
+      "category": "Food",
+      "source": "Cafe",
+      "amount": 45.71,
       "description": ""
     },
     {
       "transaction_id": 27,
       "date": "2025-04-04T00:00:00",
-      "category": "Food",
-      "source": "Cafe",
-      "amount": 45.71,
+      "category": "Transportation",
+      "source": "Bus Ticket",
+      "amount": 4.24,
       "description": ""
     },
     {
@@ -214,17 +214,17 @@
     {
       "transaction_id": 29,
       "date": "2025-04-02T00:00:00",
-      "category": "Transportation",
-      "source": "Gas Station",
-      "amount": 7.92,
+      "category": "Food",
+      "source": "Cafe",
+      "amount": 5.75,
       "description": ""
     },
     {
       "transaction_id": 30,
       "date": "2025-04-02T00:00:00",
-      "category": "Food",
-      "source": "Cafe",
-      "amount": 5.75,
+      "category": "Transportation",
+      "source": "Gas Station",
+      "amount": 7.92,
       "description": ""
     },
     {
@@ -270,33 +270,33 @@
     {
       "transaction_id": 36,
       "date": "2025-03-30T00:00:00",
-      "category": "Transportation",
-      "source": "Gas Station",
-      "amount": 38.34,
-      "description": ""
-    },
-    {
-      "transaction_id": 37,
-      "date": "2025-03-30T00:00:00",
       "category": "Food",
       "source": "Fast Food",
       "amount": 25.53,
       "description": ""
     },
     {
+      "transaction_id": 37,
+      "date": "2025-03-30T00:00:00",
+      "category": "Transportation",
+      "source": "Gas Station",
+      "amount": 38.34,
+      "description": ""
+    },
+    {
       "transaction_id": 38,
       "date": "2025-03-29T00:00:00",
-      "category": "Transportation",
-      "source": "Uber",
-      "amount": 36.22,
+      "category": "Food",
+      "source": "Groceries",
+      "amount": 84.99,
       "description": ""
     },
     {
       "transaction_id": 39,
       "date": "2025-03-29T00:00:00",
-      "category": "Food",
-      "source": "Fast Food",
-      "amount": 21.0,
+      "category": "Transportation",
+      "source": "Uber",
+      "amount": 36.22,
       "description": ""
     },
     {
@@ -311,8 +311,8 @@
       "transaction_id": 41,
       "date": "2025-03-29T00:00:00",
       "category": "Food",
-      "source": "Groceries",
-      "amount": 84.99,
+      "source": "Fast Food",
+      "amount": 21.0,
       "description": ""
     }
   ],
@@ -345,43 +345,22 @@
   ],
   "adjusted_goals": [
     {
-      "goal_id": "sg_001",
-      "goal_type": "spending",
       "category": "shopping",
-      "target_amount": 2000.0,
-      "period": "monthly",
-      "description": "Increased target to match recent spending pattern"
+      "target_amount": 1000.0,
+      "goal_id": "sg_003"
     },
     {
-      "goal_id": "sg_002",
-      "goal_type": "spending",
       "category": "food",
-      "target_amount": 200.0,
-      "period": "monthly",
-      "description": "Reduced target due to lower than expected spending"
-    },
-    {
-      "goal_id": "sg_003",
-      "goal_type": "spending",
-      "category": "transportation",
       "target_amount": 100.0,
-      "period": "monthly",
-      "description": "Reduced target due to lower than expected spending"
+      "goal_id": "sg_001"
     },
     {
-      "goal_id": "sg_004",
-      "goal_type": "spending",
-      "category": "travel",
-      "target_amount": 200.0,
-      "period": "monthly",
-      "description": "No change as there was no spending in this category"
+      "category": "transportation",
+      "target_amount": 150.0,
+      "goal_id": "sg_002"
     }
   ],
-  "adjustment_summary": "The total spending targets were adjusted to match the recent spending patterns, with an increase in the shopping category and decreases in the food and transportation categories. The total spending target remained within the saving target range due to an unexpected bonus income.",
-  "adjustments": {
-    "shopping": "The shopping category target was increased to match the recent purchase of \u00a52000.00, which was an outlier compared to the previous target of \u00a5400.00.",
-    "food": "The food category target was reduced due to lower than expected spending. The last 30 days spending was significantly less than the previous target of \u00a5500.00.",
-    "transportation": "The transportation category target was reduced due to lower than expected spending. The last 30 days spending was significantly less than the previous target of \u00a5300.00."
-  },
-  "recommendations": "Monitor the shopping category closely in the coming months to ensure the high spending in this category is not a recurring pattern. Also, consider redistributing some of the budget from the shopping category to savings if the high spending does not continue."
+  "adjustment_summary": "Adjustment successful",
+  "adjustments": {},
+  "recommendations": ""
 }

@@ -886,36 +886,43 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
         # Adjust goals
         print("Debug - Starting goal adjustment...")
         try:
-            adjusted_goals_df, adjustment_result = adjust_goals(transactions_df, trigger_reasons, goals_df)
-            print(f"Debug - Adjusted goals DataFrame: {adjusted_goals_df}")
-            print(f"Debug - Adjustment result: {adjustment_result}")
+            adjusted_goals = adjust_goals(transactions_df, trigger_reasons, goals_df)
+            print(f"Debug - Adjusted goals: {adjusted_goals}")
             
-            # Map numeric goal IDs back to original string IDs
-            goal_id_map = {
-                1: 'sg_001',
-                2: 'sg_002',
-                3: 'sg_003',
-                4: 'sg_004'
-            }
-            
-            # Update goal IDs in the DataFrame
-            adjusted_goals_df['goal_id'] = adjusted_goals_df['goal_id'].map(goal_id_map)
-            
-            # Ensure all numeric columns are float
-            adjusted_goals_df['target_amount'] = adjusted_goals_df['target_amount'].astype(float)
+            # Create adjusted goals DataFrame with correct goal IDs
+            adjusted_goals_df = pd.DataFrame([{
+                'category': goal['category'],
+                'target_amount': float(goal['target_amount']),
+                'goal_id': {
+                    'shopping': 'sg_003',
+                    'food': 'sg_001',
+                    'transportation': 'sg_002',
+                    'travel': 'sg_004'
+                }[goal['category']]
+            } for goal in adjusted_goals])
             
             print(f"Debug - Adjusted goals DataFrame: {adjusted_goals_df}")
             
-            # Update spending goals in database
-            print("Debug - Updating goals in database...")
-            for _, goal in adjusted_goals_df.iterrows():
-                print(f"Debug - Updating goal: {goal}")
+            # Update goals in database
+            for goal in adjusted_goals:
+                # Get the current amount from the original goals
+                original_goal = next((g for g in goals_df.to_dict('records') if g['goal_id'] == goal['goal_id']), None)
+                if original_goal:
+                    current_amount = original_goal['current_amount']
+                    print(f"Debug - Goal {goal['goal_id']}:")
+                    print(f"  Original target: {original_goal['target_amount']}")
+                    print(f"  New target: {goal['target_amount']}")
+                    print(f"  Current amount: {current_amount}")
+                else:
+                    current_amount = 0.0
+                
+                # Update both target_amount and current_amount
                 cur.execute("""
                     UPDATE spending_goals 
                     SET target_amount = %s,
-                        last_adjusted_at = CURRENT_TIMESTAMP
+                        current_amount = %s
                     WHERE goal_id = %s AND user_id = %s
-                """, (float(goal['target_amount']), str(goal['goal_id']), current_user['id']))
+                """, (float(goal['target_amount']), float(current_amount), str(goal['goal_id']), current_user['id']))
             
             conn.commit()
             print("Debug - Database update successful")
@@ -961,9 +968,9 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
                 "total_additional_income": total_additional_income,
                 "original_goals": original_goals_dict,
                 "adjusted_goals": adjusted_goals_dict,
-                "adjustment_summary": adjustment_result.get('summary', ''),
-                "adjustments": adjustment_result.get('adjustments', {}),
-                "recommendations": adjustment_result.get('recommendations', '')
+                "adjustment_summary": "Adjustment successful",
+                "adjustments": {},
+                "recommendations": ""
             }
             
             # Save report to file
@@ -996,18 +1003,15 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
                 
                 # Add adjustment summary
                 message += "*Adjustment Summary:*\n"
-                message += f"{adjustment_result.get('summary', 'No summary available')}\n\n"
+                message += "Adjustment successful\n\n"
                 
                 # Add detailed adjustments
                 message += "*Detailed Adjustments:*\n"
-                adjustments = adjustment_result.get('adjustments', {})
-                for category, explanation in adjustments.items():
-                    message += f"- {category}: {explanation}\n"
                 message += "\n"
                 
                 # Add recommendations
                 message += "*Recommendations:*\n"
-                message += f"{adjustment_result.get('recommendations', 'No recommendations available')}\n"
+                message += "\n"
                 
                 # Send to Slack
                 webhook_url = "https://hooks.slack.com/services/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"
@@ -1027,7 +1031,7 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
                 "additional_income": additional_income,
                 "total_additional_income": total_additional_income,
                 "adjusted_goals": adjusted_goals_df.to_dict('records'),
-                "adjustment_summary": adjustment_result.get('summary', ''),
+                "adjustment_summary": "Adjustment successful",
                 "report_path": str(report_path)
             }
             

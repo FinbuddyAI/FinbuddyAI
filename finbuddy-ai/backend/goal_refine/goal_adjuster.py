@@ -75,59 +75,64 @@ def detect_unusual_transactions(transactions_df, category_thresholds=None):
     Returns:
         List of unusual transactions
     """
-    if transactions_df.empty:
-        return []
-    
-    # Only analyze expenses (transactions with negative amounts)
-    expenses_df = transactions_df[transactions_df["amount"] < 0].copy()
-    expenses_df["amount"] = expenses_df["amount"].abs()  # Convert to positive for analysis
-    
-    if expenses_df.empty:
-        return []
-    
-    # Ensure transaction date is datetime type
-    if isinstance(expenses_df['transaction_date'][0], str):
-        expenses_df['transaction_date'] = pd.to_datetime(expenses_df['transaction_date'])
-    
-    # If no thresholds provided, calculate automatically (mean + 2*std)
-    if category_thresholds is None:
-        category_thresholds = {}
-        for category in expenses_df['category'].unique():
-            cat_expenses = expenses_df[expenses_df['category'] == category]['amount']
-            if len(cat_expenses) >= 5:  # Need at least 5 records for meaningful stats
-                mean = cat_expenses.mean()
-                std = cat_expenses.std()
-                category_thresholds[category] = mean + 2 * std
-            else:
-                # If too few records, use conservative threshold (1.5x max)
-                category_thresholds[category] = cat_expenses.max() * 1.5 if not cat_expenses.empty else 500
-    
-    # Identify unusual transactions in last 30 days
-    recent_date = expenses_df['transaction_date'].max()
-    thirty_days_ago = recent_date - timedelta(days=30)
-    recent_expenses = expenses_df[expenses_df['transaction_date'] >= thirty_days_ago]
-    
-    unusual_transactions = []
-    for _, row in recent_expenses.iterrows():
-        category = row['category']
-        amount = row['amount']
-        threshold = category_thresholds.get(category, 500)  # Default threshold
+    try:
+        if transactions_df.empty:
+            return []
         
-        if amount > threshold:
-            unusual_transactions.append({
-                'transaction_id': _,
-                'date': row['transaction_date'],
-                'category': category,
-                'merchant': row.get('merchant', row.get('name', 'Unknown')),
-                'amount': amount,
-                'threshold': threshold,
-                'description': row.get('description', ''),
-                'percent_over': ((amount - threshold) / threshold) * 100
-            })
-    
-    # Sort by percentage over threshold
-    unusual_transactions.sort(key=lambda x: x['percent_over'], reverse=True)
-    return unusual_transactions
+        # Only analyze expenses (transactions with negative amounts)
+        expenses_df = transactions_df[transactions_df["amount"] < 0].copy()
+        expenses_df["amount"] = expenses_df["amount"].abs()  # Convert to positive for analysis
+        
+        if expenses_df.empty:
+            return []
+        
+        # Ensure transaction date is datetime type
+        if isinstance(expenses_df['transaction_date'][0], str):
+            expenses_df['transaction_date'] = pd.to_datetime(expenses_df['transaction_date'])
+        
+        # If no thresholds provided, calculate automatically (mean + 2*std)
+        if category_thresholds is None:
+            category_thresholds = {}
+            for category in expenses_df['category'].unique():
+                cat_expenses = expenses_df[expenses_df['category'] == category]['amount']
+                if len(cat_expenses) >= 5:  # Need at least 5 records for meaningful stats
+                    mean = cat_expenses.mean()
+                    std = cat_expenses.std()
+                    category_thresholds[category] = mean + 2 * std
+                else:
+                    # If too few records, use conservative threshold (1.5x max)
+                    category_thresholds[category] = cat_expenses.max() * 1.5 if not cat_expenses.empty else 500
+        
+        # Identify unusual transactions in last 30 days
+        recent_date = expenses_df['transaction_date'].max()
+        thirty_days_ago = recent_date - timedelta(days=30)
+        recent_expenses = expenses_df[expenses_df['transaction_date'] >= thirty_days_ago]
+        
+        unusual_transactions = []
+        for _, row in recent_expenses.iterrows():
+            category = row['category']
+            amount = row['amount']
+            threshold = category_thresholds.get(category, 500)  # Default threshold
+            
+            if amount > threshold:
+                unusual_transactions.append({
+                    'transaction_id': _,
+                    'date': row['transaction_date'],
+                    'category': category,
+                    'merchant': row.get('merchant', row.get('name', 'Unknown')),
+                    'amount': amount,
+                    'threshold': threshold,
+                    'description': row.get('description', ''),
+                    'percent_over': ((amount - threshold) / threshold) * 100
+                })
+        
+        # Sort by percentage over threshold
+        unusual_transactions.sort(key=lambda x: x['percent_over'], reverse=True)
+        return unusual_transactions
+        
+    except Exception as e:
+        print(f"Error in detect_unusual_transactions: {str(e)}")
+        return []  # Return empty list instead of 0
 
 def detect_additional_income(transactions_df):
     """
@@ -183,7 +188,7 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
         saving_target: Monthly saving target. If None, keep total spending target unchanged.
         
     Returns:
-        Tuple of (adjusted goals DataFrame, adjustment results)
+        List of adjusted goals
     """
     # Create agents
     financial_planner, user_proxy = create_goal_adjustment_agent()
@@ -218,17 +223,17 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
     
     Return adjusted goals and explanations in JSON format with these fields:
     - adjusted_goals: List of adjusted goals, each with:
-        - goal_id: The unique identifier of the goal
+        - goal_id: The unique identifier of the goal (use the exact goal_id from the current goals)
         - goal_type: Either "spending" or "saving"
         - category: The goal category
-        - target_amount: The new target amount
+        - target_amount: The new target amount (as a number, without currency symbol)
         - period: The goal period (e.g., "monthly")
         - description: Explanation of the adjustment
-    - adjustments: Explanation for each category adjustment
+    - adjustments: Dictionary of category adjustments with explanations
     - summary: Overall adjustment explanation
-    - recommendations: Suggestions based on adjustments
+    - recommendations: List of specific recommendations
     
-    Ensure valid JSON format.
+    Ensure valid JSON format and use numbers (not strings with currency symbols) for target_amount.
     """
     
     # Initiate conversation
@@ -244,19 +249,89 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
         json_str = extract_json_from_response(last_response)
         adjustment_result = json.loads(json_str)
         
-        # Save original goals
-        adjustment_result['original_goals'] = goals_df.to_dict('records')
+        # Validate the response format
+        if 'adjusted_goals' not in adjustment_result:
+            print(f"Error in adjust_goals: Missing 'adjusted_goals' in response")
+            return goals_df.to_dict('records')
+            
+        # Create a mapping of category to goal_id from original goals
+        category_to_goal_id = {goal['category']: goal['goal_id'] for goal in goals_df.to_dict('records')}
         
-        # Update goals DataFrame
-        adjusted_goals_df = pd.DataFrame(adjustment_result['adjusted_goals'])
+        # Process each adjusted goal
+        processed_goals = []
+        for goal in adjustment_result['adjusted_goals']:
+            if 'target_amount' not in goal:
+                print(f"Error in adjust_goals: Missing 'target_amount' in goal")
+                return goals_df.to_dict('records')
+                
+            # Convert target_amount to float if it's a string
+            if isinstance(goal['target_amount'], str):
+                try:
+                    # Remove any currency symbols and whitespace
+                    amount_str = goal['target_amount'].replace('¥', '').replace('$', '').strip()
+                    goal['target_amount'] = float(amount_str)
+                except ValueError:
+                    print(f"Error in adjust_goals: Invalid target_amount format: {goal['target_amount']}")
+                    return goals_df.to_dict('records')
+            
+            # Get the correct goal_id for this category
+            goal_id = category_to_goal_id.get(goal['category'])
+            if not goal_id:
+                print(f"Error in adjust_goals: Unknown category {goal['category']}")
+                continue
+                
+            # Find the original goal to get current_amount
+            original_goal = next((g for g in goals_df.to_dict('records') if g['goal_id'] == goal_id), None)
+            if original_goal:
+                processed_goals.append({
+                    'goal_id': goal_id,
+                    'category': goal['category'],
+                    'target_amount': goal['target_amount'],
+                    'current_amount': original_goal['current_amount']
+                })
         
-        return adjusted_goals_df, adjustment_result
-    except Exception as e:
-        return goals_df, {
-            "error": f"Failed to parse adjustment response: {str(e)}",
-            "raw_response": last_response
+        # Ensure adjustments and recommendations are present
+        if 'adjustments' not in adjustment_result:
+            adjustment_result['adjustments'] = {}
+        if 'recommendations' not in adjustment_result:
+            adjustment_result['recommendations'] = []
+        if 'summary' not in adjustment_result:
+            adjustment_result['summary'] = "No summary provided"
+            
+        # Convert any datetime objects to strings
+        def convert_datetime(obj):
+            if isinstance(obj, dict):
+                return {k: convert_datetime(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [convert_datetime(i) for i in obj]
+            elif isinstance(obj, (datetime, pd.Timestamp)):
+                return obj.isoformat()
+            return obj
+            
+        # Create the adjustment report
+        adjustment_report = {
+            "user_id": new_transactions_df['user_id'].iloc[0] if 'user_id' in new_transactions_df.columns else None,
+            "timestamp": datetime.now().isoformat(),
+            "unusual_transactions": convert_datetime(trigger_reasons.get('unusual_transactions', [])),
+            "additional_income": convert_datetime(trigger_reasons.get('additional_income', [])),
+            "total_additional_income": sum(tx['amount'] for tx in trigger_reasons.get('additional_income', [])),
+            "original_goals": goals_df.to_dict('records'),
+            "adjusted_goals": processed_goals,
+            "adjustment_summary": adjustment_result['summary'],
+            "adjustments": adjustment_result['adjustments'],
+            "recommendations": adjustment_result['recommendations']
         }
-
+        
+        # Save the adjustment report
+        report_filename = f"goal_reports/adjustment_report_{adjustment_report['user_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(report_filename, 'w') as f:
+            json.dump(adjustment_report, f, indent=2)
+            
+        return processed_goals
+        
+    except Exception as e:
+        print(f"Error in adjust_goals: {str(e)}")
+        return goals_df.to_dict('records')  # Return original goals if adjustment fails
 
 def prepare_transaction_summary(df):
     """Prepare transaction summary"""
