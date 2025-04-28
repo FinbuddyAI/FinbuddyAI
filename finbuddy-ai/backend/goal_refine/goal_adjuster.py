@@ -214,12 +214,22 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
     
     ### Additional information
     - Monthly saving target: {"Keep total spending target unchanged" if saving_target is None else f"¥{saving_target:.2f}"}
+
+    CRITICAL RULES (MUST FOLLOW):
+    1. The target_amount MUST ALWAYS be higher than the current_amount for each category
+    2. If current_amount exceeds target_amount, you MUST increase the target_amount to at least 20% above the current_amount
+    3. You CANNOT set a target_amount lower than the current_amount under any circumstances
+    4. If you need to reduce a target, it must still remain higher than the current_amount
+    5. ALWAYS use the current_amount from the goals, NOT the transaction amounts
+    6. The current_amount represents the actual spending in that category, so target_amount must be higher
+    7. Maintain realistic spending limits while ensuring targets are achievable
     
     Please adjust the user's financial goals based on this information, paying special attention to:
     1. Analyzing impact of unusual transactions on category budgets
     2. Considering effect of additional income on disposable budget
     3. Ensuring adjusted total budget meets saving target
     4. Providing clear explanations for each adjustment
+    5. ALWAYS ensuring target_amount is higher than current_amount
     
     Return adjusted goals and explanations in JSON format with these fields:
     - adjusted_goals: List of adjusted goals, each with:

@@ -1,6 +1,6 @@
 {
   "user_id": null,
-  "timestamp": "2025-04-28T10:21:03.286271",
+  "timestamp": "2025-04-28T16:58:34.476533",
   "unusual_transactions": [],
   "additional_income": [
     {
@@ -14,17 +14,17 @@
     {
       "transaction_id": 4,
       "date": "2025-04-14T00:00:00",
-      "category": "Transportation",
-      "source": "Bus Ticket",
-      "amount": 3.1,
+      "category": "Food",
+      "source": "Cafe",
+      "amount": 39.71,
       "description": ""
     },
     {
       "transaction_id": 5,
       "date": "2025-04-14T00:00:00",
-      "category": "Food",
-      "source": "Cafe",
-      "amount": 39.71,
+      "category": "Transportation",
+      "source": "Bus Ticket",
+      "amount": 3.1,
       "description": ""
     },
     {
@@ -38,37 +38,21 @@
     {
       "transaction_id": 7,
       "date": "2025-04-12T00:00:00",
-      "category": "Food",
-      "source": "Groceries",
-      "amount": 108.84,
-      "description": ""
-    },
-    {
-      "transaction_id": 8,
-      "date": "2025-04-12T00:00:00",
       "category": "Transportation",
       "source": "Bus Ticket",
       "amount": 13.38,
       "description": ""
     },
     {
-      "transaction_id": 9,
-      "date": "2025-04-11T00:00:00",
-      "category": "Food",
-      "source": "Restaurant",
-      "amount": 56.01,
-      "description": ""
-    },
-    {
-      "transaction_id": 10,
-      "date": "2025-04-11T00:00:00",
+      "transaction_id": 8,
+      "date": "2025-04-12T00:00:00",
       "category": "Food",
       "source": "Groceries",
-      "amount": 47.11,
+      "amount": 108.84,
       "description": ""
     },
     {
-      "transaction_id": 11,
+      "transaction_id": 9,
       "date": "2025-04-11T00:00:00",
       "category": "Transportation",
       "source": "Uber",
@@ -76,19 +60,35 @@
       "description": ""
     },
     {
+      "transaction_id": 10,
+      "date": "2025-04-11T00:00:00",
+      "category": "Food",
+      "source": "Restaurant",
+      "amount": 56.01,
+      "description": ""
+    },
+    {
+      "transaction_id": 11,
+      "date": "2025-04-11T00:00:00",
+      "category": "Food",
+      "source": "Groceries",
+      "amount": 47.11,
+      "description": ""
+    },
+    {
       "transaction_id": 12,
       "date": "2025-04-10T00:00:00",
-      "category": "Transportation",
-      "source": "Uber",
-      "amount": 30.65,
+      "category": "Food",
+      "source": "Groceries",
+      "amount": 29.34,
       "description": ""
     },
     {
       "transaction_id": 13,
       "date": "2025-04-10T00:00:00",
-      "category": "Food",
-      "source": "Groceries",
-      "amount": 29.34,
+      "category": "Transportation",
+      "source": "Uber",
+      "amount": 30.65,
       "description": ""
     },
     {
@@ -159,8 +159,8 @@
       "transaction_id": 22,
       "date": "2025-04-05T00:00:00",
       "category": "Food",
-      "source": "Fast Food",
-      "amount": 35.28,
+      "source": "Restaurant",
+      "amount": 53.48,
       "description": ""
     },
     {
@@ -175,8 +175,8 @@
       "transaction_id": 24,
       "date": "2025-04-05T00:00:00",
       "category": "Food",
-      "source": "Restaurant",
-      "amount": 53.48,
+      "source": "Fast Food",
+      "amount": 35.28,
       "description": ""
     },
     {
@@ -347,38 +347,31 @@
     {
       "goal_id": "sg_003",
       "category": "shopping",
-      "target_amount": 400,
+      "target_amount": 2400.0,
       "current_amount": 2100.0
     },
     {
       "goal_id": "sg_001",
       "category": "food",
-      "target_amount": 200,
+      "target_amount": 500.0,
       "current_amount": 110.0
     },
     {
       "goal_id": "sg_002",
       "category": "transportation",
-      "target_amount": 200,
+      "target_amount": 300.0,
       "current_amount": 60.0
-    },
-    {
-      "goal_id": "sg_004",
-      "category": "travel",
-      "target_amount": 300,
-      "current_amount": 80.0
     }
   ],
-  "adjustment_summary": "Adjusted the budget to reflect actual spending patterns and additional income. The total spending target remains unchanged.",
+  "adjustment_summary": "Adjusted shopping target to accommodate higher spending. No changes to food and transportation targets as current spending is below targets. No adjustments for travel as no spending data is available.",
   "adjustments": {
-    "shopping": "Kept the target amount unchanged due to unusual luxury purchase.",
-    "food": "Reduced the target amount based on actual spending pattern.",
-    "transportation": "Reduced the target amount based on actual spending pattern.",
-    "travel": "Increased the target amount to utilize the additional budget."
+    "shopping": "Increased target from \u00a5400.00 to \u00a52400.00 due to higher spending",
+    "food": "No change in target as current spending is below the target",
+    "transportation": "No change in target as current spending is below the target"
   },
   "recommendations": [
-    "Avoid large purchases in the Shopping category that exceed the monthly budget.",
-    "Utilize the additional budget in the Travel category for planned activities.",
-    "Continue monitoring spending in all categories to ensure staying within budget."
+    "Consider reducing spending in the shopping category",
+    "Monitor spending in food and transportation categories and adjust targets if required",
+    "Review the need for a monthly target in the travel category based on future spending"
   ]
 }
