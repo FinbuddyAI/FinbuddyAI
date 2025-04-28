@@ -834,8 +834,6 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
         print("Debug - Converting transactions to DataFrame...")
         transactions_df = pd.DataFrame(transactions, columns=['transaction_id', 'date', 'amount', 'category', 'name'])
         transactions_df = transactions_df.rename(columns={'date': 'transaction_date'})
-        print(f"Debug - Transaction DataFrame columns: {transactions_df.columns.tolist()}")
-        print(f"Debug - Transaction DataFrame sample: {transactions_df.head()}")
         
         # Ensure transaction_date is datetime type and amount is float
         transactions_df['transaction_date'] = pd.to_datetime(transactions_df['transaction_date'])
@@ -851,15 +849,12 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
         
         goals = cur.fetchall()
         print(f"Debug - Found {len(goals)} goals")
-        print(f"Debug - Goals data: {goals}")
         if not goals:
             raise HTTPException(status_code=404, detail="No spending goals found")
         
         # Convert to DataFrame with proper column mapping
         print("Debug - Converting goals to DataFrame...")
         goals_df = pd.DataFrame(goals, columns=['goal_id', 'category', 'target_amount', 'current_amount'])
-        print(f"Debug - Goals DataFrame columns: {goals_df.columns.tolist()}")
-        print(f"Debug - Goals DataFrame sample: {goals_df.head()}")
         
         # Ensure amounts are float and goal_id is string
         goals_df['target_amount'] = goals_df['target_amount'].astype(float)
@@ -868,14 +863,10 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
         
         # Detect unusual transactions
         print("Debug - Detecting unusual transactions...")
-        try:
-            unusual_transactions = detect_unusual_transactions(transactions_df)
-            additional_income, total_additional_income = detect_additional_income(transactions_df)
-            print(f"Debug - Found {len(unusual_transactions)} unusual transactions")
-            print(f"Debug - Found {len(additional_income)} additional income entries")
-        except Exception as e:
-            print(f"Debug - Error in detection: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e))
+        unusual_transactions = detect_unusual_transactions(transactions_df)
+        additional_income, total_additional_income = detect_additional_income(transactions_df)
+        print(f"Debug - Found {len(unusual_transactions)} unusual transactions")
+        print(f"Debug - Found {len(additional_income)} additional income entries")
         
         # If no significant changes detected, return early
         if not unusual_transactions and not additional_income:
@@ -897,171 +888,109 @@ async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
         
         # Adjust goals
         print("Debug - Starting goal adjustment...")
+        adjusted_goals, adjustment_report = adjust_goals(transactions_df, trigger_reasons, goals_df)
+        print(f"Debug - Adjusted goals: {adjusted_goals}")
+        
+        # Create adjusted goals DataFrame with correct goal IDs
+        adjusted_goals_df = pd.DataFrame([{
+            'category': goal['category'],
+            'target_amount': float(goal['target_amount']),
+            'goal_id': {
+                'shopping': 'sg_003',
+                'food': 'sg_001',
+                'transportation': 'sg_002',
+                'travel': 'sg_004'
+            }[goal['category']]
+        } for goal in adjusted_goals])
+        
+        # Update goals in database
+        for goal in adjusted_goals_df.to_dict('records'):
+            cur.execute("""
+                UPDATE spending_goals 
+                SET target_amount = %s
+                WHERE goal_id = %s AND user_id = %s
+            """, (float(goal['target_amount']), str(goal['goal_id']), current_user['id']))
+            
+        conn.commit()
+        print("Debug - Database update successful")
+        
+        # Save adjustment report
+        report_dir = Path("goal_reports")
+        report_dir.mkdir(exist_ok=True)
+        
+        # Create a timestamp for the report filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_filename = f"adjustment_report_{current_user['id']}_{timestamp}.json"
+        report_path = report_dir / report_filename
+        
+        # Save report to file
+        with open(report_path, 'w') as f:
+            json.dump(adjustment_report, f, indent=2)
+        print(f"Debug - Saved adjustment report to {report_path}")
+        
+        # Send report to Slack
         try:
-            adjusted_goals = adjust_goals(transactions_df, trigger_reasons, goals_df)
-            print(f"Debug - Adjusted goals: {adjusted_goals}")
+            from slack_bot.send import send_slack_message
             
-            # Create adjusted goals DataFrame with correct goal IDs
-            adjusted_goals_df = pd.DataFrame([{
-                'category': goal['category'],
-                'target_amount': float(goal['target_amount']),
-                'goal_id': {
-                    'shopping': 'sg_003',
-                    'food': 'sg_001',
-                    'transportation': 'sg_002',
-                    'travel': 'sg_004'
-                }[goal['category']]
-            } for goal in adjusted_goals])
+            # Format the message
+            message = f"🎯 *Goal Adjustment Report*\n"
+            message += f"User ID: {current_user['id']}\n"
+            message += f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
             
-            print(f"Debug - Adjusted goals DataFrame: {adjusted_goals_df}")
-            
-            # Update goals in database
-            for goal in adjusted_goals:
-                # Get the current amount from the original goals
-                original_goal = next((g for g in goals_df.to_dict('records') if g['goal_id'] == goal['goal_id']), None)
-                if original_goal:
-                    current_amount = original_goal['current_amount']
-                    print(f"Debug - Goal {goal['goal_id']}:")
-                    print(f"  Original target: {original_goal['target_amount']}")
-                    print(f"  New target: {goal['target_amount']}")
-                    print(f"  Current amount: {current_amount}")
-                else:
-                    current_amount = 0.0
-                
-                # Update both target_amount and current_amount
-                cur.execute("""
-                    UPDATE spending_goals 
-                    SET target_amount = %s,
-                        current_amount = %s
-                    WHERE goal_id = %s AND user_id = %s
-                """, (float(goal['target_amount']), float(current_amount), str(goal['goal_id']), current_user['id']))
-            
-            conn.commit()
-            print("Debug - Database update successful")
-            
-            # Save adjustment report
-            report_dir = Path("goal_reports")
-            report_dir.mkdir(exist_ok=True)
-            
-            # Create a timestamp for the report filename
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            report_filename = f"adjustment_report_{current_user['id']}_{timestamp}.json"
-            report_path = report_dir / report_filename
-            
-            # Convert DataFrames to dictionaries and handle timestamps
-            original_goals_dict = goals_df.to_dict('records')
-            adjusted_goals_dict = adjusted_goals_df.to_dict('records')
-            
-            # Convert any datetime objects to strings
-            for goal in original_goals_dict:
-                for key, value in goal.items():
-                    if isinstance(value, (pd.Timestamp, datetime)):
-                        goal[key] = value.isoformat()
-            
-            for goal in adjusted_goals_dict:
-                for key, value in goal.items():
-                    if isinstance(value, (pd.Timestamp, datetime)):
-                        goal[key] = value.isoformat()
-            
-            # Prepare report data
-            report_data = {
-                "user_id": current_user['id'],
-                "timestamp": datetime.now().isoformat(),
-                "unusual_transactions": [
-                    {k: v.isoformat() if isinstance(v, (pd.Timestamp, datetime)) else v 
-                     for k, v in tx.items()} 
-                    for tx in unusual_transactions
-                ],
-                "additional_income": [
-                    {k: v.isoformat() if isinstance(v, (pd.Timestamp, datetime)) else v 
-                     for k, v in tx.items()} 
-                    for tx in additional_income
-                ],
-                "total_additional_income": total_additional_income,
-                "original_goals": original_goals_dict,
-                "adjusted_goals": adjusted_goals_dict,
-                "adjustment_summary": "Adjustment successful",
-                "adjustments": {},
-                "recommendations": ""
-            }
-            
-            # Save report to file
-            with open(report_path, 'w') as f:
-                json.dump(report_data, f, indent=2)
-            print(f"Debug - Saved adjustment report to {report_path}")
-            
-            # Send report to Slack
-            try:
-                from slack_bot.send import send_slack_message
-                
-                # Format the message
-                message = f"🎯 *Goal Adjustment Report*\n"
-                message += f"User ID: {current_user['id']}\n"
-                message += f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-                
-                if unusual_transactions:
-                    message += "*Unusual Transactions:*\n"
-                    for tx in unusual_transactions:
-                        message += f"- {tx['name']}: ¥{abs(tx['amount']):.2f} ({tx['category']})\n"
-                    message += "\n"
-                
-                if additional_income:
-                    message += f"*Additional Income:* ¥{total_additional_income:.2f}\n\n"
-                
-                message += "*Goal Adjustments:*\n"
-                for goal in adjusted_goals_df.to_dict('records'):
-                    message += f"- {goal['category']}: ¥{goal['target_amount']:.2f}\n"
+            if unusual_transactions:
+                message += "*Unusual Transactions:*\n"
+                for tx in unusual_transactions:
+                    message += f"- {tx['name']}: ¥{abs(tx['amount']):.2f} ({tx['category']})\n"
                 message += "\n"
-                
-                # Add adjustment summary
-                message += "*Adjustment Summary:*\n"
-                message += "Adjustment successful\n\n"
-                
-                # Add detailed adjustments
-                message += "*Detailed Adjustments:*\n"
-                message += "\n"
-                
-                # Add recommendations
-                message += "*Recommendations:*\n"
-                message += "\n"
-                
-                # Send to Slack
-                webhook_url = "https://hooks.slack.com/services/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"
-                send_slack_message(
-                    webhook_url=webhook_url,
-                    message=message,
-                    channel="#goal-adjustments",
-                    username="FinBuddy AI",
-                    icon_emoji=":robot_face:"
-                )
-                print("Debug - Sent adjustment report to Slack")
-            except Exception as e:
-                print(f"Debug - Failed to send Slack notification: {str(e)}")
             
-            return {
-                "unusual_transactions": unusual_transactions,
-                "additional_income": additional_income,
-                "total_additional_income": total_additional_income,
-                "adjusted_goals": adjusted_goals_df.to_dict('records'),
-                "adjustment_summary": "Adjustment successful",
-                "report_path": str(report_path)
-            }
+            if additional_income:
+                message += f"*Additional Income:* ¥{total_additional_income:.2f}\n\n"
             
+            message += "*Goal Adjustments:*\n"
+            for goal in adjusted_goals_df.to_dict('records'):
+                message += f"- {goal['category']}: ¥{goal['target_amount']:.2f}\n"
+            message += "\n"
+            
+            # Add adjustment summary
+            message += "*Adjustment Summary:*\n"
+            message += adjustment_report.get('adjustment_summary', 'No summary provided') + "\n\n"
+            
+            # Add detailed adjustments
+            message += "*Detailed Adjustments:*\n"
+            for category, adjustment in adjustment_report.get('adjustments', {}).items():
+                message += f"- {category}: {adjustment}\n"
+            message += "\n"
+            
+            # Add recommendations
+            message += "*Recommendations:*\n"
+            for rec in adjustment_report.get('recommendations', []):
+                message += f"- {rec}\n"
+            
+            # Send to Slack
+            webhook_url = "https://hooks.slack.com/services/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"
+            send_slack_message(
+                webhook_url=webhook_url,
+                message=message,
+                channel="#goal-adjustments",
+                username="FinBuddy AI",
+                icon_emoji=":robot_face:"
+            )
+            print("Debug - Sent adjustment report to Slack")
         except Exception as e:
-            print(f"Debug - Error in goal adjustment: {str(e)}")
-            raise HTTPException(status_code=500, detail=str(e))
-            
-    except HTTPException as he:
-        conn.rollback()
-        print(f"Debug - HTTP Exception: {str(he)}")
-        raise he
+            print(f"Debug - Failed to send Slack notification: {str(e)}")
+        
+        return {
+            "unusual_transactions": unusual_transactions,
+            "additional_income": additional_income,
+            "total_additional_income": total_additional_income,
+            "adjusted_goals": adjusted_goals_df.to_dict('records'),
+            "adjustment_summary": adjustment_report.get('adjustment_summary', 'No summary provided'),
+            "report_path": str(report_path)
+        }
+        
     except Exception as e:
-        conn.rollback()
-        print(f"Debug - Unexpected error: {str(e)}")
-        raise HTTPException(
-            status_code=500, 
-            detail=f"Failed to adjust goals: {str(e)}"
-        )
+        print(f"Debug - Error in goal adjustment: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         cur.close()
         conn.close()

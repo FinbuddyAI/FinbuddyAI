@@ -188,7 +188,7 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
         saving_target: Monthly saving target. If None, keep total spending target unchanged.
         
     Returns:
-        List of adjusted goals
+        Tuple of (adjusted goals, adjustment report)
     """
     # Create agents
     financial_planner, user_proxy = create_goal_adjustment_agent()
@@ -252,7 +252,7 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
         # Validate the response format
         if 'adjusted_goals' not in adjustment_result:
             print(f"Error in adjust_goals: Missing 'adjusted_goals' in response")
-            return goals_df.to_dict('records')
+            return goals_df.to_dict('records'), {}
             
         # Create a mapping of category to goal_id from original goals
         category_to_goal_id = {goal['category']: goal['goal_id'] for goal in goals_df.to_dict('records')}
@@ -262,7 +262,7 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
         for goal in adjustment_result['adjusted_goals']:
             if 'target_amount' not in goal:
                 print(f"Error in adjust_goals: Missing 'target_amount' in goal")
-                return goals_df.to_dict('records')
+                return goals_df.to_dict('records'), {}
                 
             # Convert target_amount to float if it's a string
             if isinstance(goal['target_amount'], str):
@@ -272,7 +272,7 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
                     goal['target_amount'] = float(amount_str)
                 except ValueError:
                     print(f"Error in adjust_goals: Invalid target_amount format: {goal['target_amount']}")
-                    return goals_df.to_dict('records')
+                    return goals_df.to_dict('records'), {}
             
             # Get the correct goal_id for this category
             goal_id = category_to_goal_id.get(goal['category'])
@@ -321,17 +321,12 @@ def adjust_goals(new_transactions_df, trigger_reasons, goals_df, saving_target=N
             "adjustments": adjustment_result['adjustments'],
             "recommendations": adjustment_result['recommendations']
         }
-        
-        # Save the adjustment report
-        report_filename = f"goal_reports/adjustment_report_{adjustment_report['user_id']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-        with open(report_filename, 'w') as f:
-            json.dump(adjustment_report, f, indent=2)
             
-        return processed_goals
+        return processed_goals, adjustment_report
         
     except Exception as e:
         print(f"Error in adjust_goals: {str(e)}")
-        return goals_df.to_dict('records')  # Return original goals if adjustment fails
+        return goals_df.to_dict('records'), {}  # Return original goals if adjustment fails
 
 def prepare_transaction_summary(df):
     """Prepare transaction summary"""
