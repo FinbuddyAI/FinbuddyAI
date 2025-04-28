@@ -8,6 +8,7 @@ from typing import List
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
+from pathlib import Path
 
 class GoalHistoryTracker:
     """Goal adjustment history tracker"""
@@ -79,31 +80,39 @@ class GoalHistoryTracker:
         Returns:
             List of adjustment history summaries
         """
-        conn = self.get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
         try:
-            # Get recent adjustments
-            cur.execute("""
-                SELECT id, timestamp, trigger_event, original_goals, adjusted_goals, 
-                       adjustment_details, cancelled
-                FROM goal_adjustments 
-                WHERE user_id = %s
-                ORDER BY timestamp DESC
-                LIMIT %s
-            """, (user_id, limit))
+            # Get all adjustment reports for this user
+            report_dir = Path("goal_reports")
+            if not report_dir.exists():
+                return []
             
-            records = cur.fetchall()
+            # Find all reports for this user
+            user_reports = []
+            for report_file in report_dir.glob(f"adjustment_report_{user_id}_*.json"):
+                try:
+                    with open(report_file, 'r') as f:
+                        report_data = json.load(f)
+                        user_reports.append({
+                            'timestamp': report_data['timestamp'],
+                            'report_path': str(report_file),
+                            'data': report_data
+                        })
+                except Exception as e:
+                    print(f"Error reading report {report_file}: {str(e)}")
+                    continue
+            
+            # Sort by timestamp descending and limit results
+            user_reports.sort(key=lambda x: x['timestamp'], reverse=True)
+            user_reports = user_reports[:limit]
             
             # Create summaries
             summaries = []
-            for record in records:
+            for report in user_reports:
+                data = report['data']
+                
                 # Calculate changes
                 changes = []
-                original_goals = record['original_goals']
-                adjusted_goals = record['adjusted_goals']
-                
-                for orig, adj in zip(original_goals, adjusted_goals):
+                for orig, adj in zip(data['original_goals'], data['adjusted_goals']):
                     if orig['category'] == adj['category']:
                         diff = adj['target_amount'] - orig['target_amount']
                         if abs(diff) > 0.01:  # Ignore tiny changes
@@ -112,19 +121,19 @@ class GoalHistoryTracker:
                             changes.append(change_str)
                 
                 summaries.append({
-                    'id': record['id'],
-                    'timestamp': record['timestamp'].strftime('%Y-%m-%d %H:%M:%S'),
-                    'trigger_event': record['trigger_event'],
-                    'summary': record['adjustment_details'].get('summary', ''),
+                    'id': report['report_path'],
+                    'timestamp': report['timestamp'],
+                    'trigger_event': 'Scheduled adjustment',
+                    'summary': data.get('adjustment_summary', ''),
                     'key_changes': changes,
-                    'cancelled': record['cancelled']
+                    'cancelled': False
                 })
             
             return summaries
             
-        finally:
-            cur.close()
-            conn.close()
+        except Exception as e:
+            print(f"Error getting adjustment summary: {str(e)}")
+            return []
     
     def get_adjustment_by_id(self, adjustment_id: int):
         """Get adjustment record by ID"""

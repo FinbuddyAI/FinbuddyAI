@@ -142,37 +142,6 @@ def init_db():
             )
         """)
         
-        # Create goals table
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS goals (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                category VARCHAR(50) NOT NULL,
-                target_amount DECIMAL(10,2) NOT NULL,
-                current_amount DECIMAL(10,2) DEFAULT 0,
-                period VARCHAR(20) NOT NULL,
-                description TEXT,
-                type VARCHAR(20) NOT NULL CHECK (type IN ('spending', 'saving')),
-                active BOOLEAN DEFAULT true,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        
-        # Create goal_adjustments table
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS goal_adjustments (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER REFERENCES users(id),
-                timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                trigger_event TEXT,
-                original_goals JSONB,
-                adjusted_goals JSONB,
-                adjustment_details JSONB,
-                cancelled BOOLEAN DEFAULT false
-            )
-        """)
-        
         conn.commit()
         print("Database tables created successfully")
     except Exception as e:
@@ -708,6 +677,29 @@ async def create_transaction(transaction: TransactionCreate, current_user: dict 
                 available_balance = available_balance + %s
             WHERE account_id = %s
         """, (transaction.amount, transaction.amount, account_id))
+        
+        # Update spending goals if transaction is an expense (negative amount)
+        if transaction.amount < 0:
+            # Get spending goal for this category
+            cur.execute("""
+                SELECT goal_id, current_amount 
+                FROM spending_goals 
+                WHERE user_id = %s 
+                AND category = %s
+            """, (current_user['id'], transaction.category.lower()))
+            
+            spending_goal = cur.fetchone()
+            
+            if spending_goal:
+                # Update the current_amount by adding the absolute value of the transaction
+                new_amount = float(spending_goal['current_amount']) + abs(float(transaction.amount))
+                cur.execute("""
+                    UPDATE spending_goals 
+                    SET current_amount = %s
+                    WHERE goal_id = %s AND user_id = %s
+                """, (new_amount, spending_goal['goal_id'], current_user['id']))
+                
+                print(f"Debug - Updated spending goal {spending_goal['goal_id']} current_amount to {new_amount}")
         
         conn.commit()
         return new_transaction
