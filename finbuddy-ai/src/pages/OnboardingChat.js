@@ -57,6 +57,7 @@ function OnboardingChat() {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
   const chatContainerRef = useRef(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -123,10 +124,6 @@ function OnboardingChat() {
         body: JSON.stringify({ content: userMessage })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
-
       const data = await response.json();
       
       // Add advisor's response
@@ -136,11 +133,13 @@ function OnboardingChat() {
       if (data.is_complete) {
         setIsOnboardingComplete(true);
         setUserProfile(data.profile);
-        // You can handle the completed profile here (e.g., save to backend, navigate to dashboard)
-        console.log('Onboarding complete! Profile:', data.profile);
+        setSuccessMessage('Congrats on finishing the onboarding conversation! We will process your dashboard based on the conversation. Great job!');
+        // Redirect to dashboard after a delay
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 3000);
       }
     } catch (err) {
-      setError('Failed to send message. Please try again.');
       console.error('Error:', err);
     } finally {
       setIsLoading(false);
@@ -148,6 +147,9 @@ function OnboardingChat() {
   };
 
   const formatMessage = (text) => {
+    // Handle undefined or null text
+    if (!text) return 'Congrats on finishing the onboarding conversation! We will process your dashboard based on the conversation. Please proceed :)';
+    
     // If the message contains financial summary, format it properly
     if (text.includes('Current Financial Summary:')) {
       return text.split('\n').map((line, index) => {
@@ -181,7 +183,7 @@ function OnboardingChat() {
           )}
           {isOnboardingComplete && (
             <Alert severity="success" sx={{ mb: 2 }}>
-              Onboarding complete! Your profile has been created.
+              {successMessage}
             </Alert>
           )}
           
