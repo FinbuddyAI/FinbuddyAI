@@ -92,6 +92,9 @@ class TransactionCreate(BaseModel):
     name: str
     date: str
 
+# Add this at the top of the file with other global variables
+onboarding_agents = {}  # Dictionary to store onboarding agents by user_id
+
 # Initialize database
 def init_db():
     try:
@@ -516,8 +519,13 @@ async def start_onboarding(token: str = Depends(get_token_from_header)):
     try:
         current_user = await get_current_user(token)
         config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
+        
+        # Create new agent for this user
         onboarding_agent = OnboardingAgent(user_id=current_user['id'], config_path=config_path)
         onboarding_agent.create_agents()
+        
+        # Store the agent
+        onboarding_agents[current_user['id']] = onboarding_agent
         
         # Start the conversation and get the initial message
         initial_message = onboarding_agent.start_conversation()
@@ -533,14 +541,18 @@ async def send_message(message: OnboardingMessage, token: str = Depends(get_toke
     """
     try:
         current_user = await get_current_user(token)
-        config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
-        onboarding_agent = OnboardingAgent(user_id=current_user['id'], config_path=config_path)
-        onboarding_agent.create_agents()
+        
+        # Get the existing agent for this user
+        onboarding_agent = onboarding_agents.get(current_user['id'])
+        if not onboarding_agent:
+            raise HTTPException(status_code=400, detail="No active onboarding session found. Please start a new session.")
         
         # Send the message and get the response
         response_message, is_complete, profile = onboarding_agent.send_message(message.content)
         
         if is_complete:
+            # Remove the agent from storage when conversation is complete
+            del onboarding_agents[current_user['id']]
             return {
                 "message": response_message,
                 "is_complete": True,
