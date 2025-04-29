@@ -6,6 +6,7 @@ import Profile from './pages/Profile';
 import Home from './pages/Home';
 import AIChat from './pages/AIChat';
 import OnboardingChat from './pages/OnboardingChat';
+import BankLinking from './pages/BankLinking';
 import Layout from './components/Layout';
 import Goals from './pages/Goals';
 
@@ -87,6 +88,14 @@ function App() {
           element={
             <PrivateRoute>
               <div>Settings Page (Coming Soon)</div>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bank-linking"
+          element={
+            <PrivateRoute>
+              <BankLinking />
             </PrivateRoute>
           }
         />

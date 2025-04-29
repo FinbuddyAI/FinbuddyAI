@@ -197,7 +197,7 @@ class OnboardingAgent:
             
             3. Provide specific advice based on their actual spending data:
                - Suggest monthly saving targets for each goal
-               - Recommend specific spending adjustments based on their transaction history, be very specific on how much to save on each category
+               - Recommend specific spending adjustments based on their transaction history, be very specific on how much to save on each category, in order to reach the saving goals per month
                - Explain how these changes will help reach their goals
             
             4. Check feasibility:

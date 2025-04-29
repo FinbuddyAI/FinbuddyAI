@@ -66,7 +66,7 @@ function Signup() {
 
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
-      navigate('/profile');
+      navigate('/bank-linking');
     } catch (err) {
       setError(err.message);
     }
