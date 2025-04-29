@@ -177,7 +177,7 @@ def generate_mock_bank_data(user_id):
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
-            account_id, user_id, "Primary Checking", mask, 1500.00, 1500.00, "USD"
+            account_id, user_id, "Primary Checking", mask, 20000.00, 20000.00, "USD"
         ))
         conn.commit()
         
@@ -204,9 +204,9 @@ def generate_mock_bank_data(user_id):
                 merchant = merchants[category][i % len(merchants[category])]
                 
                 if category == 'Rent':
-                    amount = -1200.00
+                    amount = -2500.00
                 elif category == 'Income':
-                    amount = 2000.00
+                    amount = 10000.00
                 else:
                     amount = round((i % 200) - 100, 2)  # Random amount between -100 and 100
                 
