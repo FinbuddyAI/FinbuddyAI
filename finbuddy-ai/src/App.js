@@ -12,13 +12,47 @@ import Goals from './pages/Goals';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
+    const validateToken = async () => {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        setIsAuthenticated(false);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch('http://localhost:8000/bank/data', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.ok) {
+          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('token');
+          setIsAuthenticated(false);
+        }
+      } catch (error) {
+        console.error('Error validating token:', error);
+        localStorage.removeItem('token');
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    validateToken();
   }, []);
 
   const PrivateRoute = ({ children }) => {
+    if (isLoading) {
+      return <div>Loading...</div>; // You can replace this with a proper loading component
+    }
     return isAuthenticated ? <Layout>{children}</Layout> : <Navigate to="/login" />;
   };
 

@@ -1072,3 +1072,12 @@ async def detect_anomalies(token: str = Depends(get_token_from_header)):
     except Exception as e:
         print(f"Debug - Unexpected error: {str(e)}")  # Debug log
         raise HTTPException(status_code=500, detail=str(e)) 
+
+@app.get("/auth/validate")
+async def validate_token(current_user: dict = Depends(get_current_user)):
+    """
+    Endpoint to validate the JWT token.
+    If the token is valid, it will return 200 OK.
+    If invalid, the get_current_user dependency will raise a 401 error.
+    """
+    return {"status": "valid", "user": current_user} 
