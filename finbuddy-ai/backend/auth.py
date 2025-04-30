@@ -48,7 +48,7 @@ async def get_current_user(token: str = Depends(get_token_from_header)):
                 raise HTTPException(status_code=404, detail="User not found")
             
             user_dict = convert_to_dict(user)
-            print(f"Debug - User object structure: {user_dict}")  # Debug log
+            # print(f"Debug - User object structure: {user_dict}")  # Debug log
             return user_dict
         finally:
             cur.close()

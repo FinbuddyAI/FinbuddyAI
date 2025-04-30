@@ -10,8 +10,8 @@ load_dotenv()
 def get_json_path(filename):
     # Get the directory where this script is located
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Join it with the filename to get the full path
-    return os.path.join(script_dir, filename)
+    # Join it with the mock_data directory and filename to get the full path
+    return os.path.join(script_dir, "..", "mock_data", filename)
 
 def insert_spending_goals(user_id):
     # Read spending goals from the JSON file

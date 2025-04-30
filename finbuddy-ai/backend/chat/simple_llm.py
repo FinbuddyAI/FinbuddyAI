@@ -21,7 +21,7 @@ logging.getLogger('autogen.import_utils').setLevel(logging.WARNING)
 
 class SimpleLLM:
     def __init__(self):
-        logger.debug("Initializing SimpleLLM")
+        # logger.debug("Initializing SimpleLLM")
         
         # Load environment variables
         load_dotenv()

@@ -55,7 +55,6 @@ function AIChat() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
-  const [userProfile, setUserProfile] = useState(null);
   const chatContainerRef = useRef(null);
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -132,7 +131,6 @@ function AIChat() {
       // Check if onboarding is complete
       if (data.is_complete) {
         setIsOnboardingComplete(true);
-        setUserProfile(data.profile);
         setSuccessMessage('Congrats on finishing the onboarding conversation! We will process your dashboard based on the conversation. Great job!');
         // Redirect to dashboard after a delay
         setTimeout(() => {

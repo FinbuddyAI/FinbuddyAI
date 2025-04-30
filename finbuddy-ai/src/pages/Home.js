@@ -20,13 +20,10 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import ChatIcon from '@mui/icons-material/Chat';
 import FastfoodIcon from '@mui/icons-material/Fastfood';
 import ShoppingBagIcon from '@mui/icons-material/ShoppingBag';
-import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SavingsIcon from '@mui/icons-material/Savings';
 import TimelineIcon from '@mui/icons-material/Timeline';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   background: 'white',
@@ -62,6 +59,12 @@ function Home() {
   const [loading, setLoading] = useState(true);
   const [savingGoals, setSavingGoals] = useState([]);
   const [spendingGoals, setSpendingGoals] = useState([]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -126,17 +129,7 @@ function Home() {
   }
 
   const currentBalance = userData?.accounts[0]?.balances?.current || 0;
-  const foodSpending = transactions
-    .filter(t => t.category.toLowerCase() === 'food')
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  const otherSpending = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) - foodSpending;
-
   const userName = userData?.user?.first_name || 'User';
-
-  // Calculate saving progress metrics
-  const totalSaved = savingGoals.reduce((sum, goal) => sum + goal.current_amount, 0);
-  const activeGoalsCount = savingGoals.length + spendingGoals.length;
-  const completedGoalsCount = savingGoals.filter(goal => goal.current_amount >= goal.target_amount).length;
 
   return (
     <Box sx={{ 
@@ -187,6 +180,21 @@ function Home() {
               >
                 Chat with AI
               </Button>
+              <Button
+                variant="contained"
+                startIcon={<LogoutIcon />}
+                size="small"
+                sx={{ 
+                  background: 'white',
+                  color: '#2C3E50',
+                  '&:hover': {
+                    background: 'rgba(255, 255, 255, 0.9)'
+                  }
+                }}
+                onClick={handleLogout}
+              >
+                Logout
+              </Button>
             </Grid>
           </Grid>
         </WelcomeBox>
@@ -222,9 +230,6 @@ function Home() {
                       <Typography variant="subtitle1" color="text.secondary">
                         Saving Goals
                       </Typography>
-                      <IconButton size="small" sx={{ color: '#2C3E50' }}>
-                        <TrendingUpIcon />
-                      </IconButton>
                     </Box>
                     {savingGoals.length > 0 ? (
                       <Box>
@@ -264,7 +269,7 @@ function Home() {
             </Grid>
 
             {/* Monthly Spending */}
-            <Grid item xs={12}>
+            <Grid item xs={10}>
               <StyledPaper>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography variant="subtitle1" color="text.secondary">

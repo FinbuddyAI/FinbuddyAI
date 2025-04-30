@@ -13,17 +13,15 @@ import {
   Radio,
   FormControl,
   FormLabel,
-  Divider,
-  Grid,
-  IconButton
+  Divider
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { styled } from '@mui/material/styles';
 import PersonIcon from '@mui/icons-material/Person';
-import SecurityIcon from '@mui/icons-material/Security';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import AddIcon from '@mui/icons-material/Add';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   background: 'white',
@@ -43,19 +41,13 @@ const TitleBox = styled(Paper)(({ theme }) => ({
   padding: theme.spacing(2),
   color: 'white',
   marginBottom: theme.spacing(2),
+  position: 'relative',
 }));
 
 function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [bankData, setBankData] = useState(null);
-  const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [suggestionPreference, setSuggestionPreference] = useState('1 week');
-  const [contactMethods, setContactMethods] = useState({
-    email: true,
-    phone: false
-  });
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -123,9 +115,7 @@ function Profile() {
           throw new Error('Failed to fetch data');
         }
         const profileData = await profileRes.json();
-        const bankData = await bankRes.json();
         setUser(profileData.user);
-        setBankData(bankData);
         localStorage.setItem('user', JSON.stringify(profileData.user));
         
         // Update form data with new user data
@@ -143,7 +133,6 @@ function Profile() {
       })
       .catch(err => {
         console.error('Fetch error:', err);
-        setError(err.message);
         if (!cachedUser) {
           navigate('/login');
         }
@@ -153,16 +142,13 @@ function Profile() {
       });
   }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
-
   const handleContactMethodChange = (method) => (event) => {
-    setContactMethods({
-      ...contactMethods,
-      [method]: event.target.checked
+    setFormData({
+      ...formData,
+      contactMethods: {
+        ...formData.contactMethods,
+        [method]: event.target.checked
+      }
     });
   };
 
@@ -176,6 +162,12 @@ function Profile() {
   const handleSaveProfile = () => {
     // Here you would typically make an API call to update the user's profile
     setEditMode(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
   };
 
   if (isLoading) {
@@ -214,12 +206,31 @@ function Profile() {
     }}>
       <Container maxWidth="lg">
         <TitleBox>
-          <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
-            Profile & Settings
-        </Typography>
-          <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-            Manage your account preferences and security settings
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant="h5" sx={{ color: 'white', fontWeight: 'bold' }}>
+                Profile & Settings
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+                Manage your account preferences and security settings
+              </Typography>
+            </Box>
+            <Button
+              variant="contained"
+              startIcon={<LogoutIcon />}
+              size="small"
+              sx={{ 
+                background: 'white',
+                color: '#2C3E50',
+                '&:hover': {
+                  background: 'rgba(255, 255, 255, 0.9)'
+                }
+              }}
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
+          </Box>
           <Button
             variant="contained"
             startIcon={<SmartToyIcon />}

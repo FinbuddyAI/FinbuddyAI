@@ -733,7 +733,7 @@ app.include_router(chat_router, prefix="/api/chat")
 async def detect_unusual_activity(token: str = Depends(get_token_from_header)):
     """Detect unusual transactions and additional income"""
     current_user = await get_current_user(token)
-    print(f"Debug - Current user in detect-unusual: {current_user}")  # Debug log
+    # print(f"Debug - Current user in detect-unusual: {current_user}")  # Debug log
     
     conn = get_db_connection()
     cur = conn.cursor()
