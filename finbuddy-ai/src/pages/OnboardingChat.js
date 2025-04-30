@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Container, 
@@ -12,6 +12,7 @@ import {
   Alert
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import ReactMarkdown from 'react-markdown';
 
 const StyledPaper = styled(Paper)(({ theme }) => ({
   background: 'rgba(255, 255, 255, 0.9)',
@@ -25,12 +26,26 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
 
 const ChatMessage = styled(Box)(({ theme, isUser }) => ({
   padding: theme.spacing(2),
-  marginBottom: theme.spacing(2),
+  marginBottom: theme.spacing(1),
   borderRadius: '15px',
   maxWidth: '80%',
   alignSelf: isUser ? 'flex-end' : 'flex-start',
   backgroundColor: isUser ? '#2196F3' : '#E3F2FD',
   color: isUser ? 'white' : 'black',
+  whiteSpace: 'pre-line',
+  '& p': {
+    margin: '0.1em 0',
+    lineHeight: '1.2',
+  },
+  '& ul, & ol': {
+    margin: '0.1em 0',
+    paddingLeft: '1em',
+  },
+  '& li': {
+    margin: '0',
+    padding: '0',
+    lineHeight: '1.2',
+  }
 }));
 
 function OnboardingChat() {
@@ -41,6 +56,8 @@ function OnboardingChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
   const [userProfile, setUserProfile] = useState(null);
+  const chatContainerRef = useRef(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -52,6 +69,13 @@ function OnboardingChat() {
     // Start the onboarding process
     startOnboarding();
   }, [navigate]);
+
+  // Add auto-scroll effect
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]); // Scroll when messages change or loading state changes
 
   const startOnboarding = async () => {
     try {
@@ -100,10 +124,6 @@ function OnboardingChat() {
         body: JSON.stringify({ content: userMessage })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to get response');
-      }
-
       const data = await response.json();
       
       // Add advisor's response
@@ -113,15 +133,33 @@ function OnboardingChat() {
       if (data.is_complete) {
         setIsOnboardingComplete(true);
         setUserProfile(data.profile);
-        // You can handle the completed profile here (e.g., save to backend, navigate to dashboard)
-        console.log('Onboarding complete! Profile:', data.profile);
+        setSuccessMessage('Congrats on finishing the onboarding conversation! We will process your dashboard based on the conversation. Great job!');
+        // Redirect to dashboard after a delay
+        setTimeout(() => {
+          navigate('/dashboard');
+        }, 3000);
       }
     } catch (err) {
-      setError('Failed to send message. Please try again.');
       console.error('Error:', err);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const formatMessage = (text) => {
+    // Handle undefined or null text
+    if (!text) return 'Congrats on finishing the onboarding conversation! We will process your dashboard based on the conversation. Please proceed :)';
+    
+    // If the message contains financial summary, format it properly
+    if (text.includes('Current Financial Summary:')) {
+      return text.split('\n').map((line, index) => {
+        if (line.startsWith('- ')) {
+          return `• ${line.substring(2)}`;  // Convert - to bullet points
+        }
+        return line;
+      }).join('\n');
+    }
+    return text;
   };
 
   return (
@@ -145,21 +183,47 @@ function OnboardingChat() {
           )}
           {isOnboardingComplete && (
             <Alert severity="success" sx={{ mb: 2 }}>
-              Onboarding complete! Your profile has been created.
+              {successMessage}
             </Alert>
           )}
           
-          <Box sx={{ 
-            height: '400px', 
-            overflowY: 'auto', 
-            mb: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2
-          }}>
+          <Box 
+            ref={chatContainerRef}
+            sx={{ 
+              height: '400px', 
+              overflowY: 'auto', 
+              mb: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              '&::-webkit-scrollbar': {
+                width: '8px',
+              },
+              '&::-webkit-scrollbar-track': {
+                background: '#f1f1f1',
+                borderRadius: '4px',
+              },
+              '&::-webkit-scrollbar-thumb': {
+                background: '#888',
+                borderRadius: '4px',
+                '&:hover': {
+                  background: '#555',
+                },
+              },
+            }}
+          >
             {messages.map((message, index) => (
               <ChatMessage key={index} isUser={message.isUser}>
-                <Typography>{message.text}</Typography>
+                <ReactMarkdown
+                  components={{
+                    p: ({node, ...props}) => <Typography component="p" sx={{ mb: 0.2 }} {...props} />,
+                    li: ({node, ...props}) => <Typography component="li" sx={{ mb: 0, py: 0 }} {...props} />,
+                    ul: ({node, ...props}) => <Typography component="ul" sx={{ mb: 0.2, mt: 0.2 }} {...props} />,
+                    br: () => <br style={{ margin: '0.1em 0' }} />,
+                  }}
+                >
+                  {formatMessage(message.text)}
+                </ReactMarkdown>
               </ChatMessage>
             ))}
             {isLoading && (

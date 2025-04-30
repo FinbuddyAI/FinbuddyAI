@@ -101,12 +101,12 @@ function Profile() {
 
     // Fetch user profile and bank data
     Promise.all([
-      fetch('/profile', {
+      fetch('http://localhost:8000/profile', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       }),
-      fetch('/bank/data', {
+      fetch('http://localhost:8000/bank/data', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

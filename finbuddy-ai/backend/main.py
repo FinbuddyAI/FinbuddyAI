@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.routing import APIRouter
 from pydantic import BaseModel
 import psycopg2
@@ -13,6 +12,13 @@ from datetime import datetime, timedelta
 import uuid
 import sys
 from pathlib import Path
+import pandas as pd
+from database import get_db, init_db
+from chat.routes import router as chat_router
+from auth import get_current_user, get_token_from_header, security, SECRET_KEY, ALGORITHM
+from goal_refine.goal_adjuster import detect_unusual_transactions, detect_additional_income, adjust_goals
+from goal_refine.goal_history_tracker import GoalHistoryTracker
+import json
 
 # Add the onboarding directory to the Python path
 onboarding_path = str(Path(__file__).parent.parent / "onboarding")
@@ -25,15 +31,13 @@ from onboarding_agent import OnboardingAgent
 load_dotenv()
 
 app = FastAPI()
-security = HTTPBearer()
 
-# Create onboarding router
+# Create routers
 onboarding_router = APIRouter(prefix="/onboarding", tags=["onboarding"])
+goal_refine_router = APIRouter(prefix="/goals", tags=["goals"])
 
-# Initialize the onboarding agent
-config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
-onboarding_agent = OnboardingAgent(config_path=config_path)
-onboarding_agent.create_agents()
+# Initialize goal history tracker
+goal_history_tracker = GoalHistoryTracker()
 
 # Add CORS middleware
 app.add_middleware(
@@ -53,13 +57,6 @@ pwd_context = CryptContext(
     deprecated="auto",
     bcrypt__rounds=12
 )
-
-# JWT settings
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
-
-def get_token_from_header(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    return credentials.credentials
 
 # Models
 class User(BaseModel):
@@ -89,35 +86,14 @@ class ChatMessage(BaseModel):
 class OnboardingMessage(BaseModel):
     content: str
 
-# Get current user from token
-async def get_current_user(token: str = Depends(get_token_from_header)):
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise HTTPException(status_code=401, detail="Invalid token")
-        
-        conn = get_db_connection()
-        cur = conn.cursor(cursor_factory=RealDictCursor)
-        
-        try:
-            cur.execute("""
-                SELECT id, email, username, first_name, last_name, phone_number
-                FROM users
-                WHERE email = %s
-            """, (email,))
-            user = cur.fetchone()
-            if not user:
-                raise HTTPException(status_code=404, detail="User not found")
-            
-            return User(**user)
-        finally:
-            cur.close()
-            conn.close()
-    except JWTError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+class TransactionCreate(BaseModel):
+    amount: float
+    category: str
+    name: str
+    date: str
+
+# Add this at the top of the file with other global variables
+onboarding_agents = {}  # Dictionary to store onboarding agents by user_id
 
 # Initialize database
 def init_db():
@@ -201,7 +177,7 @@ def generate_mock_bank_data(user_id):
             VALUES (%s, %s, %s, %s, %s, %s, %s)
             RETURNING id
         """, (
-            account_id, user_id, "Primary Checking", mask, 1500.00, 1500.00, "USD"
+            account_id, user_id, "Primary Checking", mask, 20000.00, 20000.00, "USD"
         ))
         conn.commit()
         
@@ -228,9 +204,9 @@ def generate_mock_bank_data(user_id):
                 merchant = merchants[category][i % len(merchants[category])]
                 
                 if category == 'Rent':
-                    amount = -1200.00
+                    amount = -2500.00
                 elif category == 'Income':
-                    amount = 2000.00
+                    amount = 10000.00
                 else:
                     amount = round((i % 200) - 100, 2)  # Random amount between -100 and 100
                 
@@ -518,12 +494,13 @@ async def chat(message: ChatMessage, token: str = Depends(get_token_from_header)
         if email is None:
             raise HTTPException(status_code=401, detail="Invalid token")
         
-        # TODO: Replace with actual AI model integration
-        # For now, return a simple response
-        return {
-            "response": f"I received your message: '{message.message}'. This is a placeholder response until we integrate the AI model."
-        }
+        # Initialize the LLM
+        from chat.simple_llm import SimpleLLM
+        llm = SimpleLLM()
         
+        # Get response from LLM
+        response = await llm.get_response(message.message)
+        return {"response": response}
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
@@ -531,7 +508,7 @@ async def chat(message: ChatMessage, token: str = Depends(get_token_from_header)
 
 @app.get("/")
 async def root():
-    return {"message": "API is running!"}
+    return {"message": "Welcome to FinBuddy AI API"}
 
 # Onboarding routes
 @onboarding_router.post("/start")
@@ -540,6 +517,16 @@ async def start_onboarding(token: str = Depends(get_token_from_header)):
     Start a new onboarding session and return the initial message from the financial advisor.
     """
     try:
+        current_user = await get_current_user(token)
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
+        
+        # Create new agent for this user
+        onboarding_agent = OnboardingAgent(user_id=current_user['id'], config_path=config_path)
+        onboarding_agent.create_agents()
+        
+        # Store the agent
+        onboarding_agents[current_user['id']] = onboarding_agent
+        
         # Start the conversation and get the initial message
         initial_message = onboarding_agent.start_conversation()
         return {"message": initial_message}
@@ -553,10 +540,19 @@ async def send_message(message: OnboardingMessage, token: str = Depends(get_toke
     Send a message to the financial advisor and get the response.
     """
     try:
+        current_user = await get_current_user(token)
+        
+        # Get the existing agent for this user
+        onboarding_agent = onboarding_agents.get(current_user['id'])
+        if not onboarding_agent:
+            raise HTTPException(status_code=400, detail="No active onboarding session found. Please start a new session.")
+        
         # Send the message and get the response
         response_message, is_complete, profile = onboarding_agent.send_message(message.content)
         
         if is_complete:
+            # Remove the agent from storage when conversation is complete
+            del onboarding_agents[current_user['id']]
             return {
                 "message": response_message,
                 "is_complete": True,
@@ -577,6 +573,11 @@ async def get_onboarding_goals(token: str = Depends(get_token_from_header)):
     Get the list of onboarding goals that need to be completed.
     """
     try:
+        current_user = await get_current_user(token)
+        config_path = os.path.join(os.path.dirname(__file__), "..", "config_list.json")
+        onboarding_agent = OnboardingAgent(user_id=current_user['id'], config_path=config_path)
+        onboarding_agent.create_agents()
+        
         goals = onboarding_agent.get_onboarding_goals()
         return {"goals": goals}
     except Exception as e:
@@ -584,7 +585,7 @@ async def get_onboarding_goals(token: str = Depends(get_token_from_header)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/goals/saving")
-async def get_saving_goals(current_user: User = Depends(get_current_user)):
+async def get_saving_goals(current_user: dict = Depends(get_current_user)):
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -593,7 +594,7 @@ async def get_saving_goals(current_user: User = Depends(get_current_user)):
                     FROM saving_goals
                     WHERE user_id = %s
                     ORDER BY created_at DESC
-                """, (current_user.id,))
+                """, (current_user['id'],))
                 goals = cur.fetchall()
                 
                 return {
@@ -614,7 +615,7 @@ async def get_saving_goals(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/goals/spending")
-async def get_spending_goals(current_user: User = Depends(get_current_user)):
+async def get_spending_goals(current_user: dict = Depends(get_current_user)):
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -623,7 +624,7 @@ async def get_spending_goals(current_user: User = Depends(get_current_user)):
                     FROM spending_goals
                     WHERE user_id = %s
                     ORDER BY created_at DESC
-                """, (current_user.id,))
+                """, (current_user['id'],))
                 goals = cur.fetchall()
                 
                 return {
@@ -642,5 +643,441 @@ async def get_spending_goals(current_user: User = Depends(get_current_user)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/transactions/create")
+async def create_transaction(transaction: TransactionCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new transaction"""
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Get user's account_id
+        cur.execute("""
+            SELECT account_id FROM bank_accounts 
+            WHERE user_id = %s 
+            LIMIT 1
+        """, (current_user['id'],))
+        result = cur.fetchone()
+        
+        if not result:
+            raise HTTPException(status_code=404, detail="No bank account found")
+            
+        account_id = result['account_id']
+        
+        # Create transaction
+        transaction_id = f"tx_{uuid.uuid4()}"
+        cur.execute("""
+            INSERT INTO transactions 
+            (transaction_id, account_id, date, amount, name, category, user_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING *
+        """, (
+            transaction_id,
+            account_id,
+            transaction.date,
+            transaction.amount,
+            transaction.name,
+            transaction.category,
+            current_user['id']
+        ))
+        
+        new_transaction = cur.fetchone()
+        
+        # Update bank account balance
+        cur.execute("""
+            UPDATE bank_accounts 
+            SET current_balance = current_balance + %s,
+                available_balance = available_balance + %s
+            WHERE account_id = %s
+        """, (transaction.amount, transaction.amount, account_id))
+        
+        # Update spending goals if transaction is an expense (negative amount)
+        if transaction.amount < 0:
+            # Get spending goal for this category
+            cur.execute("""
+                SELECT goal_id, current_amount 
+                FROM spending_goals 
+                WHERE user_id = %s 
+                AND category = %s
+            """, (current_user['id'], transaction.category.lower()))
+            
+            spending_goal = cur.fetchone()
+            
+            if spending_goal:
+                # Update the current_amount by adding the absolute value of the transaction
+                new_amount = float(spending_goal['current_amount']) + abs(float(transaction.amount))
+                cur.execute("""
+                    UPDATE spending_goals 
+                    SET current_amount = %s
+                    WHERE goal_id = %s AND user_id = %s
+                """, (new_amount, spending_goal['goal_id'], current_user['id']))
+                
+                print(f"Debug - Updated spending goal {spending_goal['goal_id']} current_amount to {new_amount}")
+        
+        conn.commit()
+        return new_transaction
+        
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
 # Include the onboarding router
-app.include_router(onboarding_router) 
+app.include_router(onboarding_router)
+
+# Include the chat router
+app.include_router(chat_router, prefix="/api/chat")
+
+@goal_refine_router.post("/detect-unusual")
+async def detect_unusual_activity(token: str = Depends(get_token_from_header)):
+    """Detect unusual transactions and additional income"""
+    current_user = await get_current_user(token)
+    print(f"Debug - Current user in detect-unusual: {current_user}")  # Debug log
+    
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    try:
+        # Get recent transactions with explicit column selection
+        cur.execute("""
+            SELECT 
+                transaction_id, 
+                account_id, 
+                date, 
+                amount::float,  -- Convert amount to float
+                name, 
+                category, 
+                user_id
+            FROM transactions 
+            WHERE user_id = %s 
+            AND date >= NOW() - INTERVAL '30 days'
+            ORDER BY date DESC
+        """, (current_user['id'],))
+        
+        transactions = cur.fetchall()
+        print(f"Debug - Found {len(transactions)} transactions in detect-unusual")  # Debug log
+        
+        if not transactions:
+            return {
+                "unusual_transactions": [],
+                "additional_income": [],
+                "total_additional_income": 0
+            }
+        
+        # Convert to DataFrame with explicit column names
+        df = pd.DataFrame(transactions, columns=[
+            'transaction_id', 
+            'account_id', 
+            'date', 
+            'amount', 
+            'name', 
+            'category', 
+            'user_id'
+        ])
+        print(f"Debug - DataFrame columns: {df.columns.tolist()}")  # Debug log
+        print(f"Debug - DataFrame sample: {df.head()}")  # Debug log
+        print(f"Debug - Amount type: {df['amount'].dtype}")  # Debug log
+        
+        df['transaction_date'] = pd.to_datetime(df['date'])
+        
+        # Ensure amount is float
+        df['amount'] = df['amount'].astype(float)
+        
+        # Detect unusual transactions
+        unusual_transactions = detect_unusual_transactions(df)
+        print(f"Debug - Found {len(unusual_transactions)} unusual transactions in detect-unusual")  # Debug log
+        
+        # Detect additional income
+        additional_income, total_additional_income = detect_additional_income(df)
+        print(f"Debug - Additional income in detect-unusual: {additional_income}")  # Debug log
+        
+        return {
+            "unusual_transactions": unusual_transactions,
+            "additional_income": additional_income,
+            "total_additional_income": total_additional_income
+        }
+        
+    except Exception as e:
+        print(f"Debug - Error in detect-unusual: {str(e)}")  # Debug log
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+@goal_refine_router.post("/adjust")
+async def adjust_goals_endpoint(token: str = Depends(get_token_from_header)):
+    """Adjust spending goals based on recent transactions"""
+    current_user = await get_current_user(token)
+    print(f"Debug - Starting goal adjustment for user: {current_user['id']}")
+    
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+    
+    try:
+        # Get recent transactions
+        print("Debug - Fetching recent transactions...")
+        cur.execute("""
+            SELECT transaction_id, date, amount::float, category, name
+            FROM transactions 
+            WHERE user_id = %s 
+            AND date >= CURRENT_DATE - INTERVAL '30 days'
+            ORDER BY date DESC
+        """, (current_user['id'],))
+        
+        transactions = cur.fetchall()
+        print(f"Debug - Found {len(transactions)} transactions")
+        if not transactions:
+            raise HTTPException(status_code=404, detail="No recent transactions found")
+        
+        # Convert to DataFrame and rename date column
+        print("Debug - Converting transactions to DataFrame...")
+        transactions_df = pd.DataFrame(transactions, columns=['transaction_id', 'date', 'amount', 'category', 'name'])
+        transactions_df = transactions_df.rename(columns={'date': 'transaction_date'})
+        
+        # Ensure transaction_date is datetime type and amount is float
+        transactions_df['transaction_date'] = pd.to_datetime(transactions_df['transaction_date'])
+        transactions_df['amount'] = transactions_df['amount'].astype(float)
+        
+        # Get current spending goals
+        print("Debug - Fetching current spending goals...")
+        cur.execute("""
+            SELECT goal_id, category, target_amount::float, current_amount::float
+            FROM spending_goals 
+            WHERE user_id = %s
+        """, (current_user['id'],))
+        
+        goals = cur.fetchall()
+        print(f"Debug - Found {len(goals)} goals")
+        if not goals:
+            raise HTTPException(status_code=404, detail="No spending goals found")
+        
+        # Convert to DataFrame with proper column mapping
+        print("Debug - Converting goals to DataFrame...")
+        goals_df = pd.DataFrame(goals, columns=['goal_id', 'category', 'target_amount', 'current_amount'])
+        
+        # Ensure amounts are float and goal_id is string
+        goals_df['target_amount'] = goals_df['target_amount'].astype(float)
+        goals_df['current_amount'] = goals_df['current_amount'].astype(float)
+        goals_df['goal_id'] = goals_df['goal_id'].astype(str)
+        
+        # Detect unusual transactions
+        print("Debug - Detecting unusual transactions...")
+        unusual_transactions = detect_unusual_transactions(transactions_df)
+        additional_income, total_additional_income = detect_additional_income(transactions_df)
+        print(f"Debug - Found {len(unusual_transactions)} unusual transactions")
+        print(f"Debug - Found {len(additional_income)} additional income entries")
+        
+        # If no significant changes detected, return early
+        if not unusual_transactions and not additional_income:
+            print("Debug - No significant changes detected")
+            return {
+                "message": "No significant changes detected. Goals remain unchanged.",
+                "unusual_transactions": [],
+                "additional_income": [],
+                "total_additional_income": 0,
+                "adjusted_goals": goals_df.to_dict('records')
+            }
+        
+        # Prepare trigger reasons
+        print("Debug - Preparing trigger reasons...")
+        trigger_reasons = {
+            "unusual_transactions": unusual_transactions,
+            "additional_income": additional_income
+        }
+        
+        # Adjust goals
+        print("Debug - Starting goal adjustment...")
+        adjusted_goals, adjustment_report = adjust_goals(transactions_df, trigger_reasons, goals_df)
+        print(f"Debug - Adjusted goals: {adjusted_goals}")
+        
+        # Create adjusted goals DataFrame with correct goal IDs
+        adjusted_goals_df = pd.DataFrame([{
+            'category': goal['category'],
+            'target_amount': float(goal['target_amount']),
+            'goal_id': {
+                'shopping': 'sg_003',
+                'food': 'sg_001',
+                'transportation': 'sg_002',
+                'travel': 'sg_004'
+            }[goal['category']]
+        } for goal in adjusted_goals])
+        
+        # Update goals in database
+        for goal in adjusted_goals_df.to_dict('records'):
+            cur.execute("""
+                UPDATE spending_goals 
+                SET target_amount = %s
+                WHERE goal_id = %s AND user_id = %s
+            """, (float(goal['target_amount']), str(goal['goal_id']), current_user['id']))
+            
+        conn.commit()
+        print("Debug - Database update successful")
+        
+        # Save adjustment report
+        report_dir = Path("goal_reports")
+        report_dir.mkdir(exist_ok=True)
+        
+        # Create a timestamp for the report filename
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_filename = f"adjustment_report_{current_user['id']}_{timestamp}.json"
+        report_path = report_dir / report_filename
+        
+        # Save report to file
+        with open(report_path, 'w') as f:
+            json.dump(adjustment_report, f, indent=2)
+        print(f"Debug - Saved adjustment report to {report_path}")
+        
+        # Send report to Slack
+        try:
+            from slack_bot.send import send_slack_message
+            
+            # Format the message
+            message = f"🎯 *Goal Adjustment Report*\n"
+            message += f"User ID: {current_user['id']}\n"
+            message += f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
+            
+            if unusual_transactions:
+                message += "*Unusual Transactions:*\n"
+                for tx in unusual_transactions:
+                    message += f"- {tx['name']}: ¥{abs(tx['amount']):.2f} ({tx['category']})\n"
+                message += "\n"
+            
+            if additional_income:
+                message += f"*Additional Income:* ¥{total_additional_income:.2f}\n\n"
+            
+            message += "*Goal Adjustments:*\n"
+            for goal in adjusted_goals_df.to_dict('records'):
+                message += f"- {goal['category']}: ¥{goal['target_amount']:.2f}\n"
+            message += "\n"
+            
+            # Add adjustment summary
+            message += "*Adjustment Summary:*\n"
+            message += adjustment_report.get('adjustment_summary', 'No summary provided') + "\n\n"
+            
+            # Add detailed adjustments
+            message += "*Detailed Adjustments:*\n"
+            for category, adjustment in adjustment_report.get('adjustments', {}).items():
+                message += f"- {category}: {adjustment}\n"
+            message += "\n"
+            
+            # Add recommendations
+            message += "*Recommendations:*\n"
+            for rec in adjustment_report.get('recommendations', []):
+                message += f"- {rec}\n"
+            
+            # Send to Slack
+            webhook_url = "https://hooks.slack.com/services/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"
+            send_slack_message(
+                webhook_url=webhook_url,
+                message=message,
+                channel="#goal-adjustments",
+                username="FinBuddy AI",
+                icon_emoji=":robot_face:"
+            )
+            print("Debug - Sent adjustment report to Slack")
+        except Exception as e:
+            print(f"Debug - Failed to send Slack notification: {str(e)}")
+        
+        return {
+            "unusual_transactions": unusual_transactions,
+            "additional_income": additional_income,
+            "total_additional_income": total_additional_income,
+            "adjusted_goals": adjusted_goals_df.to_dict('records'),
+            "adjustment_summary": adjustment_report.get('adjustment_summary', 'No summary provided'),
+            "report_path": str(report_path)
+        }
+        
+    except Exception as e:
+        print(f"Debug - Error in goal adjustment: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+        print("Debug - Database connection closed")
+
+@goal_refine_router.get("/history")
+async def get_goal_history(token: str = Depends(get_token_from_header)):
+    """Get goal adjustment history"""
+    current_user = await get_current_user(token)
+    
+    try:
+        # Get adjustment history for the current user
+        history = goal_history_tracker.get_adjustment_summary(user_id=current_user['id'])
+        
+        return {
+            "history": history
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Include routers
+app.include_router(onboarding_router)
+app.include_router(goal_refine_router)
+app.include_router(chat_router)
+
+@app.post("/anomaly/detect")
+async def detect_anomalies(token: str = Depends(get_token_from_header)):
+    """Detect anomalies in recent transactions"""
+    try:
+        # print("Debug - Getting current user from token")  # Debug log
+        current_user = await get_current_user(token)
+        # print(f"Debug - Current user object: {current_user}")  # Debug log
+        
+        if not current_user or 'id' not in current_user:
+            # print(f"Debug - Invalid user object structure: {current_user}")  # Debug log
+            raise HTTPException(status_code=500, detail="Invalid user object structure")
+            
+        user_id = current_user['id']
+        # print(f"Debug - Using user_id: {user_id}")  # Debug log
+        
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                # Get recent transactions
+                cur.execute("""
+                    SELECT transaction_id, account_id, date, amount, name, category, user_id
+                    FROM transactions 
+                    WHERE user_id = %s 
+                    AND date >= NOW() - INTERVAL '30 days'
+                    ORDER BY date DESC
+                """, (user_id,))
+                
+                transactions = cur.fetchall()
+                print(f"Debug - Found {len(transactions)} transactions")  # Debug log
+                
+                if not transactions:
+                    raise HTTPException(status_code=400, detail="No recent transactions found")
+                
+                # Convert to DataFrame
+                df = pd.DataFrame(transactions, columns=['transaction_id', 'account_id', 'date', 'amount', 'name', 'category', 'user_id'])
+                df['transaction_date'] = pd.to_datetime(df['date'])
+                
+                # Detect unusual transactions
+                unusual_transactions = detect_unusual_transactions(df)
+                print(f"Debug - Found {len(unusual_transactions)} unusual transactions")  # Debug log
+                
+                # Detect additional income
+                additional_income, income_details = detect_additional_income(df)
+                print(f"Debug - Additional income: {additional_income}")  # Debug log
+                
+                return {
+                    "unusual_transactions": unusual_transactions,
+                    "additional_income": additional_income,
+                    "income_details": income_details
+                }
+    except HTTPException as he:
+        print(f"Debug - HTTP Exception: {str(he)}")  # Debug log
+        raise he
+    except Exception as e:
+        print(f"Debug - Unexpected error: {str(e)}")  # Debug log
+        raise HTTPException(status_code=500, detail=str(e)) 
+
+@app.get("/auth/validate")
+async def validate_token(current_user: dict = Depends(get_current_user)):
+    """
+    Endpoint to validate the JWT token.
+    If the token is valid, it will return 200 OK.
+    If invalid, the get_current_user dependency will raise a 401 error.
+    """
+    return {"status": "valid", "user": current_user} 

@@ -4,6 +4,8 @@ uvicorn>=0.27.1
 
 # Database
 psycopg2-binary>=2.9.9
+sqlalchemy>=1.4.0
+mcp>=1.4.0
 
 # Authentication and Security
 python-jose[cryptography]>=3.3.0
@@ -20,6 +22,7 @@ pydantic>=2.6.1
 openai>=1.0.0
 pandas>=2.2.0
 pyautogen>=0.2.14
+websockets>=10.4
 
 # Utility
 python-dateutil>=2.8.2

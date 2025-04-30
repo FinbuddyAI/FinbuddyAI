@@ -67,10 +67,7 @@ function Home() {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) {
-          navigate('/login');
-          return;
-        }
+        if (!token) return;
 
         // Fetch bank data
         const bankResponse = await fetch('http://localhost:8000/bank/data', {
@@ -118,7 +115,7 @@ function Home() {
     };
 
     fetchData();
-  }, [navigate]);
+  }, []);
 
   if (loading) {
     return (
@@ -129,13 +126,17 @@ function Home() {
   }
 
   const currentBalance = userData?.accounts[0]?.balances?.current || 0;
-  const monthlySpending = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
   const foodSpending = transactions
     .filter(t => t.category.toLowerCase() === 'food')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
-  const otherSpending = monthlySpending - foodSpending;
+  const otherSpending = transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0) - foodSpending;
 
   const userName = userData?.user?.first_name || 'User';
+
+  // Calculate saving progress metrics
+  const totalSaved = savingGoals.reduce((sum, goal) => sum + goal.current_amount, 0);
+  const activeGoalsCount = savingGoals.length + spendingGoals.length;
+  const completedGoalsCount = savingGoals.filter(goal => goal.current_amount >= goal.target_amount).length;
 
   return (
     <Box sx={{ 
@@ -146,12 +147,11 @@ function Home() {
       p: 2
     }}>
       <Container maxWidth="lg">
-        {/* Welcome Box */}
         <WelcomeBox>
           <Grid container alignItems="center" spacing={2}>
             <Grid item xs={12} md={6}>
               <Typography variant="h5" gutterBottom>
-                Welcome, {userName}!
+                Welcome back, {userName}!
               </Typography>
               <Typography variant="body1">
                 Your finances are looking good today! Keep up the good work!
@@ -191,184 +191,154 @@ function Home() {
           </Grid>
         </WelcomeBox>
 
-        {/* Three Cards Row */}
-        <Grid container spacing={2} sx={{ mb: 4 }}>
-          {/* Current Balance */}
-          <Grid item xs={12} md={4}>
-            <StyledPaper>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Current Balance
-                </Typography>
-                <IconButton size="small" sx={{ color: '#2C3E50' }}>
-                  <AccountBalanceWalletIcon />
-                </IconButton>
-              </Box>
-              <Typography variant="h5" sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
-                ${currentBalance.toFixed(2)}
-              </Typography>
-            </StyledPaper>
-          </Grid>
-
-          {/* Monthly Spending */}
-          <Grid item xs={12} md={4}>
-            <StyledPaper>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Monthly Spending
-                </Typography>
-                <IconButton size="small" sx={{ color: '#2C3E50' }}>
-                  <AttachMoneyIcon />
-                </IconButton>
-              </Box>
-              <Box sx={{ mb: 1 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                  <FastfoodIcon sx={{ mr: 1, color: '#e74c3c', fontSize: '1.2rem' }} />
-                  <Typography variant="body2" sx={{ flexGrow: 1 }}>Food</Typography>
-                  <Typography variant="body2">${foodSpending.toFixed(2)}</Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={(foodSpending / monthlySpending) * 100} 
-                  sx={{ 
-                    height: 6, 
-                    borderRadius: 3,
-                    backgroundColor: 'rgba(231, 76, 60, 0.2)',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: '#e74c3c'
-                    }
-                  }}
-                />
-              </Box>
-              <Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
-                  <ShoppingBagIcon sx={{ mr: 1, color: '#3498db', fontSize: '1.2rem' }} />
-                  <Typography variant="body2" sx={{ flexGrow: 1 }}>Other</Typography>
-                  <Typography variant="body2">${otherSpending.toFixed(2)}</Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={(otherSpending / monthlySpending) * 100} 
-                  sx={{ 
-                    height: 6, 
-                    borderRadius: 3,
-                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                    '& .MuiLinearProgress-bar': {
-                      backgroundColor: '#3498db'
-                    }
-                  }}
-                />
-              </Box>
-            </StyledPaper>
-          </Grid>
-
-          {/* Saving Progress */}
-          <Grid item xs={12} md={4}>
-            <StyledPaper>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Saving Progress
-                </Typography>
-                <IconButton size="small" sx={{ color: '#2C3E50' }}>
-                  <TrendingUpIcon />
-                </IconButton>
-              </Box>
-              {savingGoals.length > 0 ? (
-                <Box>
-                  {savingGoals.map((goal) => (
-                    <Box key={goal.id} sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                          {goal.category.replace('_', ' ')}
-                        </Typography>
-                        <Typography variant="body2">
-                          ${goal.current_amount.toFixed(2)} / ${goal.target_amount.toFixed(2)}
-                        </Typography>
-                      </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={(goal.current_amount / goal.target_amount) * 100} 
-                        sx={{ 
-                          height: 6, 
-                          borderRadius: 3,
-                          backgroundColor: 'rgba(46, 204, 113, 0.2)',
-                          '& .MuiLinearProgress-bar': {
-                            backgroundColor: '#2ecc71'
-                          }
-                        }}
-                      />
+        {/* Main Content Grid */}
+        <Grid container spacing={2}>
+          {/* Left Side */}
+          <Grid item xs={12} md={7.2} container spacing={2}>
+            {/* Top Row - Current Balance and Saving Goals */}
+            <Grid item xs={12}>
+              <Grid container spacing={2}>
+                {/* Current Balance */}
+                <Grid item xs={12} md={5}>
+                  <StyledPaper>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="subtitle1" color="text.secondary">
+                        Current Balance
+                      </Typography>
+                      <IconButton size="small" sx={{ color: '#2C3E50' }}>
+                        <AccountBalanceWalletIcon />
+                      </IconButton>
                     </Box>
-                  ))}
-                </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No saving goals yet
-                </Typography>
-              )}
-            </StyledPaper>
-          </Grid>
-        </Grid>
+                    <Typography variant="h5" sx={{ color: '#2C3E50', fontWeight: 'bold' }}>
+                      ${currentBalance.toFixed(2)}
+                    </Typography>
+                  </StyledPaper>
+                </Grid>
 
-        {/* Two Cards Row */}
-        <Grid container spacing={2} mt={4}>
-          {/* Active Goals */}
-          <Grid item xs={12} md={6}>
-            <StyledPaper>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                <Typography variant="subtitle1" color="text.secondary">
-                  Active Goals
-                </Typography>
-                <IconButton size="small" sx={{ color: '#2C3E50' }}>
-                  <TimelineIcon />
-                </IconButton>
-              </Box>
-              {spendingGoals.length > 0 ? (
-                <Box>
-                  {spendingGoals.map((goal) => (
-                    <Box key={goal.id} sx={{ mb: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
-                        <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
-                          {goal.category}
-                        </Typography>
-                        <Typography variant="body2">
-                          ${goal.current_amount.toFixed(2)} / ${goal.target_amount.toFixed(2)}
-                        </Typography>
-                      </Box>
-                      <LinearProgress 
-                        variant="determinate" 
-                        value={(goal.current_amount / goal.target_amount) * 100} 
-                        sx={{ 
-                          height: 6, 
-                          borderRadius: 3,
-                          backgroundColor: 'rgba(52, 152, 219, 0.2)',
-                          '& .MuiLinearProgress-bar': {
-                            backgroundColor: '#3498db'
-                          }
-                        }}
-                      />
+                {/* Saving Goals */}
+                <Grid item xs={12} md={7}>
+                  <StyledPaper>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                      <Typography variant="subtitle1" color="text.secondary">
+                        Saving Goals
+                      </Typography>
+                      <IconButton size="small" sx={{ color: '#2C3E50' }}>
+                        <TrendingUpIcon />
+                      </IconButton>
                     </Box>
-                  ))}
+                    {savingGoals.length > 0 ? (
+                      <Box>
+                        {savingGoals.map((goal) => (
+                          <Box key={goal.id} sx={{ mb: 2 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                              <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                                {goal.category.replace('_', ' ')}
+                              </Typography>
+                              <Typography variant="body2">
+                                ${goal.current_amount.toFixed(2)} / ${goal.target_amount.toFixed(2)}
+                              </Typography>
+                            </Box>
+                            <LinearProgress 
+                              variant="determinate" 
+                              value={(goal.current_amount / goal.target_amount) * 100} 
+                              sx={{ 
+                                height: 6, 
+                                borderRadius: 3,
+                                backgroundColor: 'rgba(46, 204, 113, 0.2)',
+                                '& .MuiLinearProgress-bar': {
+                                  backgroundColor: '#2ecc71'
+                                }
+                              }}
+                            />
+                          </Box>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        No saving goals yet
+                      </Typography>
+                    )}
+                  </StyledPaper>
+                </Grid>
+              </Grid>
+            </Grid>
+
+            {/* Monthly Spending */}
+            <Grid item xs={12}>
+              <StyledPaper>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                  <Typography variant="subtitle1" color="text.secondary">
+                    Monthly Spending
+                  </Typography>
+                  <IconButton size="small" sx={{ color: '#2C3E50' }}>
+                    <TimelineIcon />
+                  </IconButton>
                 </Box>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  No spending goals yet
-                </Typography>
-              )}
-            </StyledPaper>
+                {spendingGoals.length > 0 ? (
+                  <Box>
+                    {spendingGoals.map((goal) => (
+                      <Box key={goal.id} sx={{ mb: 2 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                          <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                            {goal.category}
+                          </Typography>
+                          <Typography variant="body2">
+                            ${goal.current_amount.toFixed(2)} / ${goal.target_amount.toFixed(2)}
+                          </Typography>
+                        </Box>
+                        <LinearProgress 
+                          variant="determinate" 
+                          value={(goal.current_amount / goal.target_amount) * 100} 
+                          sx={{ 
+                            height: 6, 
+                            borderRadius: 3,
+                            backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                            '& .MuiLinearProgress-bar': {
+                              backgroundColor: '#3498db'
+                            }
+                          }}
+                        />
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    No spending goals yet
+                  </Typography>
+                )}
+              </StyledPaper>
+            </Grid>
           </Grid>
 
-          {/* Recent Activity */}
-          <Grid item xs={12} md={6}>
-            <StyledPaper>
+          {/* Right Side - Recent Transactions */}
+          <Grid item xs={12} md={4.8}>
+            <StyledPaper sx={{ height: '100%' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="subtitle1" color="text.secondary">
-                  Recent Activity
+                  Recent Transactions
                 </Typography>
                 <IconButton size="small" sx={{ color: '#2C3E50' }}>
                   <ReceiptIcon />
                 </IconButton>
               </Box>
-              <List dense sx={{ maxHeight: '200px', overflow: 'auto' }}>
+              <List dense sx={{ 
+                height: 'calc(100% - 48px)', 
+                overflow: 'auto',
+                '&::-webkit-scrollbar': {
+                  width: '8px',
+                },
+                '&::-webkit-scrollbar-track': {
+                  background: '#f1f1f1',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                  background: '#888',
+                  borderRadius: '4px',
+                },
+                '&::-webkit-scrollbar-thumb:hover': {
+                  background: '#555',
+                },
+              }}>
                 {transactions.map((transaction, index) => (
                   <React.Fragment key={transaction.transaction_id}>
                     <ListItem>

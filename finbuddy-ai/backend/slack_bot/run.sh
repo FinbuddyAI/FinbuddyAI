@@ -1,0 +1,1 @@
+python send.py --webhook "https://hooks.slack.com/services/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" --message "Hi, I'm finbuddy!" --channel "#general" --username "Finbuddy" --icon ":robot_face:"

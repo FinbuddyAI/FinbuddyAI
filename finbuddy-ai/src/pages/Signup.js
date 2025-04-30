@@ -30,7 +30,7 @@ const StyledText = styled(Typography)(({ theme }) => ({
   textShadow: '0 0 20px rgba(44, 62, 80, 0.2)',
 }));
 
-function Signup() {
+function Signup({ setIsAuthenticated }) {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: '',
@@ -66,7 +66,8 @@ function Signup() {
 
       const data = await response.json();
       localStorage.setItem('token', data.access_token);
-      navigate('/profile');
+      setIsAuthenticated(true);
+      navigate('/bank-linking');
     } catch (err) {
       setError(err.message);
     }
