@@ -202,12 +202,12 @@ function Home() {
         {/* Main Content Grid */}
         <Grid container spacing={2}>
           {/* Left Side */}
-          <Grid item xs={12} md={7.2} container spacing={2}>
+          <Grid item xs={12} md={8} container spacing={4}>
             {/* Top Row - Current Balance and Saving Goals */}
             <Grid item xs={12}>
               <Grid container spacing={2}>
                 {/* Current Balance */}
-                <Grid item xs={12} md={5}>
+                <Grid item xs={12} md={6}>
                   <StyledPaper>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="subtitle1" color="text.secondary">
@@ -224,7 +224,7 @@ function Home() {
                 </Grid>
 
                 {/* Saving Goals */}
-                <Grid item xs={12} md={7}>
+                <Grid item xs={12} md={6}>
                   <StyledPaper>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                       <Typography variant="subtitle1" color="text.secondary">
@@ -269,8 +269,8 @@ function Home() {
             </Grid>
 
             {/* Monthly Spending */}
-            <Grid item xs={10}>
-              <StyledPaper>
+            <Grid item xs={12} sx={{ mt: 2 }}>
+              <StyledPaper sx={{ maxHeight: '300px', overflow: 'auto' }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                   <Typography variant="subtitle1" color="text.secondary">
                     Monthly Spending
@@ -280,7 +280,23 @@ function Home() {
                   </IconButton>
                 </Box>
                 {spendingGoals.length > 0 ? (
-                  <Box>
+                  <Box sx={{ 
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': {
+                      width: '8px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      background: '#f1f1f1',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      background: '#888',
+                      borderRadius: '4px',
+                    },
+                    '&::-webkit-scrollbar-thumb:hover': {
+                      background: '#555',
+                    },
+                  }}>
                     {spendingGoals.map((goal) => (
                       <Box key={goal.id} sx={{ mb: 2 }}>
                         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
@@ -316,7 +332,7 @@ function Home() {
           </Grid>
 
           {/* Right Side - Recent Transactions */}
-          <Grid item xs={12} md={4.8}>
+          <Grid item xs={12} md={4}>
             <StyledPaper sx={{ height: '100%' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
                 <Typography variant="subtitle1" color="text.secondary">
